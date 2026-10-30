@@ -105,6 +105,63 @@
 <body class="bg-slate-100/90 text-slate-800 min-h-screen flex flex-col antialiased">
 
   <!-- ========================================== -->
+  <!-- Top Header Bar: หน้า WELCOME (มี Docs & GitHub) -->
+  <!-- ========================================== -->
+  <header id="welcome-header" class="bg-white border-b border-slate-200 sticky top-0 z-30 transition-all">
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-4">
+      
+      <!-- คลิกที่ Logo หรือชื่อเว็บ เพื่อกลับหน้า Welcome ได้ทันที -->
+      <div 
+        onclick="navigateTo('welcome')" 
+        title="KIDAI"
+        class="flex items-center gap-2.5 cursor-pointer group select-none"
+      >
+        <img 
+          src="logonotext.png" 
+          alt="KIDAI Logo" 
+          class="w-9 h-9 md:w-10 md:h-10 object-contain shrink-0 group-hover:scale-105 transition"
+        />
+        <div class="flex items-baseline gap-1.5">
+          <h1 class="text-lg md:text-xl font-bold tracking-tight leading-tight select-none">
+            <span class="text-slate-900 group-hover:text-knw-orange transition">KID</span><span class="text-knw-orange">AI</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- เมนูนำทาง: คู่มือการใช้งาน (Docs) & GitHub & ปุ่มเข้าสตูดิโอ -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Text Button: Doc คู่มือการใช้งานอย่างละเอียด -->
+        <button 
+          id="btn-nav-docs"
+          onclick="navigateTo('docs')" 
+          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-knw-orange hover:bg-slate-50 rounded transition cursor-pointer select-none"
+          title="เปิดอ่านคู่มือและวิธีใช้งานอย่างละเอียด"
+        >
+          <svg class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+          </svg>
+          <span id="btn-nav-docs-text">คู่มือการใช้งาน (Docs)</span>
+        </button>
+
+        <!-- Text Button / Link: GitHub -->
+        <a 
+          href="https://github.com/kidbright/kidbrightide" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded transition cursor-pointer select-none"
+          title="ไปที่ GitHub Repository (kidbright/kidbrightide)"
+        >
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================== -->
   <!-- Top Header Bar: VS Code Minimal Flat Style (แสดงเฉพาะในหน้า Studio) -->
   <!-- ========================================== -->
   <header id="main-header" class="hidden bg-white border-b border-slate-200 sticky top-0 z-30 transition-all">
@@ -155,8 +212,21 @@
         </button>
       </div>
 
-      <!-- Serial Controls แบบ Flat Split Button Minimal -->
-      <div class="flex items-center gap-3">
+      <!-- Serial Controls & Tour Trigger -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- ปุ่มเปิด User Tour แนะนำการใช้งานสตูดิโอ -->
+        <button 
+          id="btn-studio-tour"
+          onclick="startStudioTour(true)" 
+          title="ดูคำแนะนำการใช้งานสตูดิโอ (User Tour)"
+          class="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-slate-500 hover:text-knw-orange hover:bg-slate-50 rounded transition cursor-pointer select-none"
+        >
+          <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 18h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span class="hidden md:inline">แนะนำการใช้งาน</span>
+        </button>
+
         <!-- ข้อความแสดงสถานะเชื่อมต่อ (ไม่มีกรอบกล่องหนา) -->
         <div id="serial-badge" class="hidden items-center gap-1.5 text-xs font-mono text-emerald-600 transition">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -786,6 +856,292 @@
   </main>
   </div>
 
+  <!-- ========================================== -->
+  <!-- 3. หน้า DOCS (คู่มือการใช้งานอย่างละเอียด)     -->
+  <!-- ========================================== -->
+  <div id="view-page-docs" class="hidden flex-1 w-full max-w-7xl mx-auto px-4 py-8 animate-fade-in text-slate-800">
+    
+    <!-- Hero Header ประจำหน้า Docs -->
+    <div class="mb-8 pb-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="text-xs font-mono px-2 py-0.5 rounded bg-orange-100 text-knw-orange font-semibold">DOCUMENTATION</span>
+          <span class="text-xs text-slate-400 font-mono">v2.0</span>
+        </div>
+        <h2 class="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+          คู่มือการใช้งาน <span class="text-slate-900">KID</span><span class="text-knw-orange">AI</span> Studio
+        </h2>
+        <p class="text-xs md:text-sm text-slate-500 mt-1 max-w-2xl">
+          คู่มือฉบับสมบูรณ์สำหรับการเทรนโมเดล AI Vision, การติดตั้ง Plugin ใน KidBright IDE และการสื่อสารผ่าน Web Serial API
+        </p>
+      </div>
+
+      <!-- Action Buttons ด้านบนขวา -->
+      <div class="flex items-center gap-2.5 shrink-0">
+        <a 
+          href="ai_serial.zip" 
+          download="ai_serial.zip"
+          class="px-3.5 py-2 bg-slate-900 hover:bg-knw-orange text-white rounded text-xs font-medium transition flex items-center gap-1.5 select-none"
+          title="ดาวน์โหลดไฟล์ ai_serial.zip"
+        >
+          <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+          </svg>
+          <span>ดาวน์โหลด Plugin .zip</span>
+        </a>
+
+        <button 
+          onclick="navigateTo('studio')" 
+          class="px-4 py-2 bg-knw-orange hover:bg-knw-orangeHover text-white rounded text-xs font-medium transition flex items-center gap-1.5 select-none shadow-xs"
+        >
+          <span>เปิดสตูดิโอ (Studio)</span>
+          <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Layout สองคอลัมน์: Sidebar สารบัญ + Content เนื้อหา -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- เมนูสารบัญด้านซ้าย (Sticky Sidebar on Desktop) -->
+      <aside class="lg:col-span-3 lg:sticky lg:top-16 space-y-3">
+        <div class="bg-white rounded-md border border-slate-200 p-4">
+          <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5 pb-2 border-b border-slate-100 flex items-center gap-2">
+            <svg class="w-4 h-4 text-knw-orange stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+            </svg>
+            <span>สารบัญเนื้อหา</span>
+          </h3>
+          <nav class="space-y-1 text-xs">
+            <a href="#doc-section-1" class="block py-1.5 px-2 rounded text-slate-600 hover:text-knw-orange hover:bg-slate-50 transition">1. บทนำและภาพรวมระบบ</a>
+            <a href="#doc-section-2" class="block py-1.5 px-2 rounded text-slate-600 hover:text-knw-orange hover:bg-slate-50 transition">2. การติดตั้ง Plugin ใน KidBright IDE</a>
+            <a href="#doc-section-3" class="block py-1.5 px-2 rounded text-slate-600 hover:text-knw-orange hover:bg-slate-50 transition">3. โมเดลจดจำใบหน้า (Face)</a>
+            <a href="#doc-section-4" class="block py-1.5 px-2 rounded text-slate-600 hover:text-knw-orange hover:bg-slate-50 transition">4. โมเดลนับจำนวนนิ้ว (Hands)</a>
+            <a href="#doc-section-5" class="block py-1.5 px-2 rounded text-slate-600 hover:text-knw-orange hover:bg-slate-50 transition">5. การเชื่อมต่อ Web Serial API</a>
+            <a href="#doc-section-6" class="block py-1.5 px-2 rounded text-slate-600 hover:text-knw-orange hover:bg-slate-50 transition">6. การแก้ปัญหาและคำถามที่พบบ่อย</a>
+          </nav>
+
+          <div class="mt-4 pt-3 border-t border-slate-100 space-y-1.5">
+            <button 
+              onclick="navigateTo('welcome')" 
+              class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition flex items-center gap-1.5"
+            >
+              <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+              </svg>
+              <span>กลับหน้าแรก (Home)</span>
+            </button>
+            <a 
+              href="https://github.com/kidbright/kidbrightide" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="w-full text-left py-1.5 px-2 rounded text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition flex items-center gap-1.5"
+            >
+              <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+              </svg>
+              <span>GitHub Repository</span>
+            </a>
+          </div>
+        </div>
+      </aside>
+
+      <!-- คอลัมน์เนื้อหาหลัก (Main Documentation Article) -->
+      <article class="lg:col-span-9 space-y-10">
+        
+        <!-- Section 1: บทนำและภาพรวมระบบ -->
+        <section id="doc-section-1" class="bg-white rounded-md border border-slate-200 p-6 space-y-4 scroll-mt-20">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <span class="w-6 h-6 rounded bg-slate-900 text-knw-orange font-mono text-xs flex items-center justify-center font-bold">1</span>
+            <h3 class="text-base font-bold text-slate-900">บทนำและภาพรวมระบบ (Introduction & Overview)</h3>
+          </div>
+
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            <b>KIDAI (คิดได้)</b> คือแพลตฟอร์มการเรียนรู้และทดลองปัญญาประดิษฐ์ (AI Vision Studio) บนเว็บเบราว์เซอร์ ที่สร้างขึ้นเพื่อเชื่อมต่อความสามารถด้าน Computer Vision เข้ากับบอร์ดสมองกลฝังตัว <b>KidBright32</b> โดยมุ่งเน้นการประมวลผลที่รวดเร็ว ปลอดภัย และไม่จำเป็นต้องติดตั้งโปรแกรมฝั่งเซิร์ฟเวอร์หรือคอมไพเลอร์ Python เพิ่มเติม
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded">
+              <strong class="text-xs font-semibold text-slate-900 block mb-1">🔒 100% Client-side</strong>
+              <p class="text-xs text-slate-500">รันโมเดลบนเบราว์เซอร์ด้วย TensorFlow.js และ MediaPipe ไม่มีการส่งภาพขึ้นคลาวด์</p>
+            </div>
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded">
+              <strong class="text-xs font-semibold text-slate-900 block mb-1">⚡ Direct Web Serial</strong>
+              <p class="text-xs text-slate-500">ส่งผลลัพธ์ผ่านสาย USB เข้าสู่บอร์ด KidBright32 ทันทีที่ความเร็ว 115200 bps</p>
+            </div>
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded">
+              <strong class="text-xs font-semibold text-slate-900 block mb-1">🧩 KidBright Plugin</strong>
+              <p class="text-xs text-slate-500">มีปลั๊กอิน <code class="font-mono text-knw-orange">ai_serial.zip</code> รองรับการต่อบล็อกคำสั่งใน KidBright IDE ทันที</p>
+            </div>
+          </div>
+
+          <div class="p-3.5 bg-orange-50/60 border border-orange-100 rounded text-xs text-slate-700 leading-relaxed">
+            <strong class="text-knw-orange block mb-0.5">ข้อกำหนดของระบบ:</strong>
+            ใช้งานได้บนคอมพิวเตอร์ที่ติดตั้งเบราว์เซอร์ Chromium-based เช่น Google Chrome หรือ Microsoft Edge (เวอร์ชัน 89 ขึ้นไป) พร้อมกล้องเว็บแคม และบอร์ด KidBright32 เชื่อมต่อผ่านสาย Micro-USB Data
+          </div>
+        </section>
+
+        <!-- Section 2: การติดตั้ง Plugin ใน KidBright IDE -->
+        <section id="doc-section-2" class="bg-white rounded-md border border-slate-200 p-6 space-y-4 scroll-mt-20">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <span class="w-6 h-6 rounded bg-slate-900 text-knw-orange font-mono text-xs flex items-center justify-center font-bold">2</span>
+            <h3 class="text-base font-bold text-slate-900">การติดตั้ง Plugin ในโปรแกรม KidBright IDE</h3>
+          </div>
+
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            เพื่อให้บอร์ด KidBright32 สามารถรับข้อมูลผลลัพธ์การทำนายจาก KIDAI ได้ จะต้องติดตั้งปลั๊กอิน <b>AI Serial Plugin</b> ในโปรแกรม KidBright IDE ก่อน โดยมีขั้นตอนง่ายๆ ดังนี้:
+          </p>
+
+          <div class="space-y-3">
+            <div class="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded">
+              <span class="font-mono font-bold text-knw-orange text-sm shrink-0">STEP 1</span>
+              <div class="text-xs space-y-1">
+                <strong class="text-slate-800 block">ดาวน์โหลดไฟล์ปลั๊กอิน ai_serial.zip</strong>
+                <p class="text-slate-500">คลิกปุ่มดาวน์โหลดบนหน้าเว็บเพื่อรับไฟล์ <code class="bg-white px-1 py-0.5 border border-slate-200 rounded text-knw-orange font-mono">ai_serial.zip</code> (ไม่ต้องแตกไฟล์ zip)</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded">
+              <span class="font-mono font-bold text-knw-orange text-sm shrink-0">STEP 2</span>
+              <div class="text-xs space-y-1">
+                <strong class="text-slate-800 block">เปิดโปรแกรม KidBright IDE และเข้าสู่เมนู Plugins</strong>
+                <p class="text-slate-500">ที่แถบเมนูด้านบนของโปรแกรม KidBright IDE เลือกเมนู <b>Plugins &gt; Install Plugins</b></p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded">
+              <span class="font-mono font-bold text-knw-orange text-sm shrink-0">STEP 3</span>
+              <div class="text-xs space-y-1">
+                <strong class="text-slate-800 block">เลือกไฟล์และรีสตาร์ทโปรแกรม</strong>
+                <p class="text-slate-500">เลือกไฟล์ <code class="bg-white px-1 py-0.5 border border-slate-200 rounded text-slate-700 font-mono">ai_serial.zip</code> โปรแกรมจะทำการติดตั้งและรีสตาร์ท KidBright IDE ให้อัตโนมัติ</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded">
+              <span class="font-mono font-bold text-knw-orange text-sm shrink-0">STEP 4</span>
+              <div class="text-xs space-y-1">
+                <strong class="text-slate-800 block">พบบล็อกคำสั่งกลุ่ม AI Serial</strong>
+                <p class="text-slate-500">จะพบบล็อกคำสั่งใหม่ในแถบหมวดหมู่ <b>Plugins &gt; AI Serial</b> สำหรับนำไปต่อกับบล็อกแสดงผล LED หรือควบคุมอุปกรณ์</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4 bg-slate-900 text-white rounded-md text-xs space-y-2">
+            <span class="text-slate-400 font-mono text-[11px] block">// ตัวอย่างบล็อกคำสั่งที่ใช้งานบ่อย</span>
+            <ul class="space-y-1 text-slate-300 font-mono text-[11px]">
+              <li>• <span class="text-emerald-400">เมื่อมีข้อมูลจาก AI Serial มาถึง</span> (Event Listener)</li>
+              <li>• <span class="text-amber-400">อ่านค่าข้อความ AI Serial</span> (String) สำหรับโหมดจดจำใบหน้า เช่น "Alice"</li>
+              <li>• <span class="text-cyan-400">อ่านค่าตัวเลข AI Serial</span> (Number) สำหรับโหมดนับจำนวนนิ้ว เช่น 0 ถึง 5</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Section 3: โมเดลจดจำใบหน้า -->
+        <section id="doc-section-3" class="bg-white rounded-md border border-slate-200 p-6 space-y-4 scroll-mt-20">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <span class="w-6 h-6 rounded bg-slate-900 text-knw-orange font-mono text-xs flex items-center justify-center font-bold">3</span>
+            <h3 class="text-base font-bold text-slate-900">โมเดลจดจำใบหน้า (Face Recognition)</h3>
+          </div>
+
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            โหมดจดจำใบหน้าพัฒนาขึ้นโดยใช้การผสมผสาน 3 เทคโนโลยี:
+            <b>BlazeFace</b> สำหรับตีกรอบและ Crop เฉพาะใบหน้าจริง, 
+            <b>MobileNet</b> ในการสกัดคุณลักษณะ (Feature Vector 1024 มิติ), 
+            และ <b>KNN Classifier</b> ในการจำแนกประเภทแบบ Real-time
+          </p>
+
+          <div class="space-y-2 text-xs text-slate-700">
+            <strong class="text-slate-900 block">แนวทางปฏิบัติที่ดี (Best Practices):</strong>
+            <ul class="space-y-1.5 list-disc list-inside text-slate-600 pl-1">
+              <li><b>จำนวนภาพตัวอย่าง:</b> แนะนำให้เก็บภาพตัวอย่างประมาณ 8 ถึง 15 ภาพต่อคลาส</li>
+              <li><b>ความหลากหลายของมุมมอง:</b> ขณะกดค้างถ่ายภาพ ให้หันศีรษะซ้าย-ขวา เอียงคอเล็กน้อย เพื่อให้โมเดลจำได้ทุกมุม</li>
+              <li><b>คลาสสำหรับพื้นหลังว่าง:</b> ควรเพิ่มคลาส <b>"ไม่มีคน"</b> หรือ <b>"พื้นหลัง"</b> โดยการถ่ายภาพห้องที่ไม่มีคน เพื่อช่วยลด False Positive</li>
+              <li><b>เกณฑ์ความมั่นใจ (Threshold):</b> ตั้งค่าเกณฑ์ความมั่นใจไว้ที่ประมาณ 70% ถึง 80% หากโมเดลมั่นใจต่ำกว่าเกณฑ์ จะถูกจัดเป็น "คนแปลกหน้า (Unknown)" ทันที</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Section 4: โมเดลนับจำนวนนิ้ว -->
+        <section id="doc-section-4" class="bg-white rounded-md border border-slate-200 p-6 space-y-4 scroll-mt-20">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <span class="w-6 h-6 rounded bg-slate-900 text-knw-orange font-mono text-xs flex items-center justify-center font-bold">4</span>
+            <h3 class="text-base font-bold text-slate-900">โมเดลนับจำนวนนิ้ว (MediaPipe Hands)</h3>
+          </div>
+
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            ตรวจจับและระบุตำแหน่งข้อต่อกระดูกมือ 21 จุดในรูปแบบ 3 มิติแบบ 60 FPS ด้วย <b>MediaPipe Hands</b> จาก Google พร้อมระบบนับจำนวนนิ้วที่ชูขึ้น (0 ถึง 5 นิ้ว) ที่รองรับทั้งมือซ้าย มือขวา และตรวจจับนิ้วโป้งได้อย่างแม่นยำ
+          </p>
+
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded text-xs space-y-2">
+            <strong class="text-slate-900 block">รูปแบบข้อมูลที่ส่งไปยัง KidBright32:</strong>
+            <p class="text-slate-600">
+              เมื่อตรวจพบมือ ระบบจะส่งตัวเลขเดี่ยว เช่น <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-knw-orange">"0"</code>, <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-knw-orange">"1"</code>, ..., <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-knw-orange">"5"</code> เข้าสู่บอร์ดทาง Serial โดยตรง เพื่อให้นักเรียนนำค่าตัวเลขไปเปรียบเทียบในบล็อก If/Else ได้ง่ายดาย
+            </p>
+          </div>
+        </section>
+
+        <!-- Section 5: การเชื่อมต่อ Web Serial API -->
+        <section id="doc-section-5" class="bg-white rounded-md border border-slate-200 p-6 space-y-4 scroll-mt-20">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <span class="w-6 h-6 rounded bg-slate-900 text-knw-orange font-mono text-xs flex items-center justify-center font-bold">5</span>
+            <h3 class="text-base font-bold text-slate-900">การเชื่อมต่อ Web Serial API</h3>
+          </div>
+
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            Web Serial API เป็นมาตรฐานของ W3C ที่อนุญาตให้เว็บเพจสื่อสารกับอุปกรณ์ภายนอกผ่านพอร์ต Serial ได้โดยตรง:
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded">
+              <span class="font-medium text-slate-800 block mb-0.5">Baud Rate ความเร็วสื่อสาร</span>
+              <span class="text-slate-500 font-mono">115200 bps (8 data bits, no parity, 1 stop bit)</span>
+            </div>
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded">
+              <span class="font-medium text-slate-800 block mb-0.5">Auto-reconnect</span>
+              <span class="text-slate-500">ระบบจำพอร์ตเดิมไว้ในเบราว์เซอร์ เชื่อมต่อให้อัตโนมัติเมื่อเปิดเว็บ</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 6: การแก้ปัญหาและคำถามที่พบบ่อย -->
+        <section id="doc-section-6" class="bg-white rounded-md border border-slate-200 p-6 space-y-4 scroll-mt-20">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <span class="w-6 h-6 rounded bg-slate-900 text-knw-orange font-mono text-xs flex items-center justify-center font-bold">6</span>
+            <h3 class="text-base font-bold text-slate-900">การแก้ปัญหาและคำถามที่พบบ่อย (Troubleshooting & FAQ)</h3>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded">
+              <strong class="text-slate-900 block font-semibold mb-1">Q1: ทำไมกด "เชื่อมต่อ KidBright" แล้วไม่มีพอร์ต COM ขึ้นให้เลือก?</strong>
+              <p class="text-slate-600">
+                1. ตรวจสอบว่าสาย USB ที่ใช้เป็นสาย Data หรือไม่ (สายชาร์จบางรุ่นมีเฉพาะขั้วไฟ ไม่มีสายข้อมูล)<br>
+                2. ตรวจสอบว่าได้ติดตั้งไดรเวอร์ USB to Serial เช่น <b>CP210x</b> หรือ <b>CH340</b> ของบอร์ด KidBright32 แล้วหรือยัง
+              </p>
+            </div>
+
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded">
+              <strong class="text-slate-900 block font-semibold mb-1">Q2: เกิดข้อผิดพลาด "Port is already open" เชื่อมต่อไม่ได้</strong>
+              <p class="text-slate-600">
+                หากเปิดหน้าต่าง Serial Monitor หรือ Terminal ใน KidBright IDE หรือโปรแกรมอื่นค้างไว้ ให้ปิดหน้าต่างนั้นก่อน เพื่อคืนสิทธิ์การใช้งานพอร์ตให้กับเบราว์เซอร์
+              </p>
+            </div>
+
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded">
+              <strong class="text-slate-900 block font-semibold mb-1">Q3: กล้องไม่เปิดทำงาน หรือภาพมืดสนิท</strong>
+              <p class="text-slate-600">
+                คลิกที่ไอคอนรูปแม่กุญแจ 🔒 ที่แถบที่อยู่ URL ของเบราว์เซอร์ ตรวจสอบว่าได้ตั้งค่าอนุญาต (Allow) การใช้งานกล้องแล้ว และปิดแอปพลิเคชันอื่นที่อาจดึงกล้องเว็บแคมอยู่
+              </p>
+            </div>
+          </div>
+        </section>
+
+      </article>
+
+    </div>
+  </div>
+
   <!-- Modal ดูภาพตัวอย่างทั้งหมดของคลาส & ลบรายภาพ -->
   <div 
     id="modal-face-samples" 
@@ -843,6 +1199,8 @@
     </div>
   </div>
 
+
+
   <!-- Hidden File Input สำหรับ Upload รูปภาพเข้าคลาส -->
   <input type="file" id="class-file-uploader" multiple accept="image/*" class="hidden" onchange="handleClassFilesUploaded(event)">
 
@@ -854,6 +1212,84 @@
   <!-- Version Overlay จางๆ ที่มุมขวาล่าง -->
   <div class="fixed bottom-2 right-3 z-40 pointer-events-none select-none font-mono text-[10px] md:text-xs text-slate-400/40 tracking-wider">
     v2.0
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- User Tour: แนะนำการใช้งานสตูดิโอ (Interactive Walkthrough)         -->
+  <!-- ============================================================== -->
+  <div id="tour-overlay-container" class="hidden fixed inset-0 z-50 select-none">
+    <!-- Backdrop ดักคลิกแบบโปร่งใส (ไม่มีสีและไม่เบลอ เพื่อให้มองเห็นองค์ประกอบเป้าหมายได้อย่างคมชัด 100%) -->
+    <div id="tour-backdrop" class="fixed inset-0 bg-transparent" onclick="endStudioTour()"></div>
+
+    <!-- Spotlight Cutout Box: ใช้ Box-shadow ทำฉากหลังมืดด้านนอก และเจาะช่องใสคมชัดตรงกลาง -->
+    <div 
+      id="tour-spotlight" 
+      class="fixed pointer-events-none transition-all duration-300 ease-out rounded-lg bg-transparent"
+      style="box-shadow: 0 0 0 2px #EA580C, 0 0 0 9999px rgba(15, 23, 42, 0.75); top: -9999px; left: -9999px; width: 0; height: 0;"
+    ></div>
+
+    <!-- Tour Popover Card แสดงคำแนะนำ -->
+    <div 
+      id="tour-card" 
+      class="fixed z-10 w-[92vw] max-w-sm sm:max-w-md bg-white rounded-lg border border-slate-200 shadow-2xl p-4 transition-all duration-300 ease-out"
+      style="top: -9999px; left: -9999px;"
+    >
+      <!-- Header: ลำดับขั้นตอน + หัวข้อ + ปุ่มปิด -->
+      <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-orange-100 text-knw-orange tracking-wide">
+            <span id="tour-step-current">1</span> / <span id="tour-step-total">6</span>
+          </span>
+          <h4 id="tour-title" class="text-xs font-bold text-slate-900 leading-tight">
+            หัวข้อขั้นตอน
+          </h4>
+        </div>
+        <button 
+          onclick="endStudioTour()" 
+          class="text-slate-400 hover:text-slate-700 p-1 rounded hover:bg-slate-100 transition cursor-pointer"
+          title="ข้าม / ปิดคำแนะนำ (Esc)"
+        >
+          <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Description คำอธิบาย -->
+      <p id="tour-desc" class="text-xs text-slate-600 leading-relaxed min-h-[48px]">
+        คำอธิบายขั้นตอน...
+      </p>
+
+      <!-- Footer Buttons: ข้าม, ย้อนกลับ, ถัดไป/เสร็จสิ้น -->
+      <div class="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+        <button 
+          onclick="endStudioTour()" 
+          class="text-xs text-slate-400 hover:text-slate-600 px-2 py-1 rounded hover:bg-slate-50 transition cursor-pointer select-none"
+        >
+          ข้าม (Skip)
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button 
+            id="tour-btn-prev" 
+            onclick="prevStudioTourStep()" 
+            class="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded transition cursor-pointer select-none"
+          >
+            ย้อนกลับ
+          </button>
+          <button 
+            id="tour-btn-next" 
+            onclick="nextStudioTourStep()" 
+            class="px-3.5 py-1 text-xs font-medium text-white bg-knw-orange hover:bg-knw-orangeHover active:bg-orange-700 rounded transition cursor-pointer select-none shadow-xs flex items-center gap-1"
+          >
+            <span id="tour-btn-next-text">ถัดไป</span>
+            <svg id="tour-btn-next-icon" class="w-3 h-3 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ============================================================== -->
@@ -994,24 +1430,45 @@
     function navigateTo(targetPage, targetMode = null) {
       activePage = targetPage;
       const header = document.getElementById("main-header");
+      const welcomeHeader = document.getElementById("welcome-header");
       const welcomeView = document.getElementById("view-page-welcome");
       const studioView = document.getElementById("view-page-studio");
+      const docsView = document.getElementById("view-page-docs");
+      const btnNavDocs = document.getElementById("btn-nav-docs");
 
       // บันทึกหน้าล่าสุดลง LocalStorage เพื่อให้รีเฟรชแล้วค้างอยู่ที่เดิม
       try {
         localStorage.setItem(STORAGE_KEY_CURRENT_PAGE, targetPage);
       } catch (e) {}
 
+      // เลื่อนหน้าจอกลับขึ้นบนสุดเสมอเมื่อเปลี่ยนหน้า
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
       if (targetPage === "welcome") {
-        // ข้อ 1: ในหน้าแรก มีแค่การแนะนำ Tools Bar ด้านบนไม่ต้องมี
+        if (tourIsActive) endStudioTour();
+        // หน้าแรก: แสดง Topbar สำหรับ Welcome & ซ่อนหน้าอื่น
         if (header) header.classList.add("hidden");
+        if (welcomeHeader) welcomeHeader.classList.remove("hidden");
         if (welcomeView) welcomeView.classList.remove("hidden");
         if (studioView) studioView.classList.add("hidden");
+        if (docsView) docsView.classList.add("hidden");
+        if (btnNavDocs) btnNavDocs.className = "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-knw-orange hover:bg-slate-50 rounded transition cursor-pointer select-none";
+      } else if (targetPage === "docs") {
+        if (tourIsActive) endStudioTour();
+        // หน้าคู่มือ (Docs Page): ใช้ Topbar ของ Welcome พร้อมไฮไลต์ปุ่ม Docs
+        if (header) header.classList.add("hidden");
+        if (welcomeHeader) welcomeHeader.classList.remove("hidden");
+        if (welcomeView) welcomeView.classList.add("hidden");
+        if (studioView) studioView.classList.add("hidden");
+        if (docsView) docsView.classList.remove("hidden");
+        if (btnNavDocs) btnNavDocs.className = "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-knw-orange bg-orange-50 border border-orange-200/60 rounded transition cursor-pointer select-none font-semibold";
       } else {
-        // ในหน้าสตูดิโอ: แสดง Tools Bar ด้านบน
+        // ในหน้าสตูดิโอ: แสดง Topbar สำหรับ Studio (มี Tab สลับโหมด + Serial)
         if (header) header.classList.remove("hidden");
+        if (welcomeHeader) welcomeHeader.classList.add("hidden");
         if (welcomeView) welcomeView.classList.add("hidden");
         if (studioView) studioView.classList.remove("hidden");
+        if (docsView) docsView.classList.add("hidden");
 
         if (targetMode) {
           switchMode(targetMode);
@@ -1019,6 +1476,9 @@
           const savedMode = localStorage.getItem(STORAGE_KEY_CURRENT_MODE) || currentMode || "face";
           switchMode(savedMode);
         }
+
+        // ตรวจสอบเพื่อเริ่ม User Tour อัตโนมัติหากเข้าหน้า Studio เป็นครั้งแรก
+        checkAutoStartTour();
       }
     }
 
@@ -1960,8 +2420,292 @@
       appendLog(`[SYS] ลบภาพตัวอย่าง #${sampleIndex + 1} ออกจากคลาส "${cls.name}" (คงเหลือ ${cls.samples.length} ภาพ)`);
     }
 
-    // ปิด Modal เมื่อกดปุ่ม Escape
+    // -------------------------------------------------------------
+    // User Tour: แนะนำการใช้งานสตูดิโอ (Interactive Walkthrough)
+    // ครอบคลุมทั้งโหมดจดจำใบหน้า และโหมดนับจำนวนนิ้วมือ MediaPipe
+    // -------------------------------------------------------------
+    const STORAGE_KEY_TOUR_COMPLETED = "kidai_studio_tour_completed";
+    let tourCurrentStepIndex = 0;
+    let tourIsActive = false;
+    let tourInitialMode = "face";
+
+    const studioTourSteps = [
+      {
+        targetId: "btn-serial-connect",
+        title: "1. เชื่อมต่อบอร์ด KidBright32",
+        desc: "คลิกเพื่อเชื่อมต่อผ่านสาย USB ด้วย Web Serial API ที่ความเร็ว 115200 bps ระบบจะจดจำพอร์ตเดิมให้อัตโนมัติในครั้งถัดไป",
+        placement: "bottom",
+        requiredMode: null
+      },
+      {
+        targetId: "btn-toggle-cam",
+        title: "2. เปิดกล้องเพื่อเริ่มตรวจจับ",
+        desc: "กดปุ่ม <b>'เปิดกล้องทำงาน'</b> สีเขียว เพื่อเริ่มสตรีมภาพและประมวลผล AI บนเครื่องของคุณแบบ Real-time ผลตรวจจับจะแสดงบนจอด้านบนทันที",
+        placement: "top",
+        requiredMode: null
+      },
+      {
+        targetId: "tab-btn-face",
+        title: "3. [โมเดล 1] จดจำใบหน้า (Face Recognition)",
+        desc: "แท็บสำหรับเลือกใช้งานโมเดลจดจำใบหน้า ซึ่งขับเคลื่อนด้วย <b>BlazeFace + MobileNet + KNN</b> ประมวลผลรวดเร็วและปลอดภัยบนเครื่องคุณ 100%",
+        placement: "bottom",
+        requiredMode: "face"
+      },
+      {
+        targetId: "card-face-classes",
+        title: "4. กำหนดคลาสและถ่ายภาพใบหน้า",
+        desc: "กด <b>'+ เพิ่มคลาส'</b> เพื่อตั้งชื่อบุคคล จากนั้น<b>กดปุ่มถ่ายภาพค้าง</b>เพื่อบันทึกตัวอย่างใบหน้าอย่างรวดเร็ว (แนะนำ 8-15 ภาพต่อคลาส) หรืออัปโหลดรูปภาพ",
+        placement: "left",
+        requiredMode: "face"
+      },
+      {
+        targetId: "tool-card-settings",
+        title: "5. ตั้งค่าเกณฑ์ความมั่นใจ (Threshold)",
+        desc: "ปรับเกณฑ์ความมั่นใจในการจำแนกใบหน้า หากมั่นใจต่ำกว่าเกณฑ์จะแจ้งเป็น <b>'คนแปลกหน้า (Unknown)'</b> พร้อมกำหนดช่วงเวลาส่งข้อมูล Serial (ms)",
+        placement: "left",
+        requiredMode: "face"
+      },
+      {
+        targetId: "tab-btn-hand",
+        title: "6. [โมเดล 2] นับจำนวนนิ้ว (MediaPipe Hands)",
+        desc: "คลิกแท็บนี้เพื่อสลับเข้าสู่<b>โมเดลตรวจจับนิ้วมือ</b> ระบบจะตรวจจับจุดข้อนิ้ว 21 จุด 3 มิติความเร็วสูง 60 FPS",
+        placement: "bottom",
+        requiredMode: "hand"
+      },
+      {
+        targetId: "card-hand-counter",
+        title: "7. แสดงผลจำนวนนิ้วและโครงกระดูกมือ",
+        desc: "เพียงยกมือขึ้นหน้ากล้อง ระบบจะวาดจุดข้อต่อและแสดง<b>ตัวเลข 0 ถึง 5 นิ้วขนาดใหญ่</b> พร้อมส่งค่าตัวเลขเดี่ยวเข้าบอร์ด KidBright32 ทันที",
+        placement: "left",
+        requiredMode: "hand"
+      },
+      {
+        targetId: "right-column-tools",
+        title: "8. จัดเรียงเครื่องมือได้อิสระ (Drag & Drop)",
+        desc: "คลิกค้างที่จุด <b>Drag Handle (⋮⋮)</b> บนหัวการ์ดใดก็ได้ เพื่อลากสลับลำดับการ์ดเครื่องมือฝั่งขวาตามใจชอบ ระบบจะจำลำดับไว้ให้เสมอ",
+        placement: "left",
+        requiredMode: null
+      },
+      {
+        targetId: "tool-card-serial",
+        title: "9. ประวัติการส่งข้อมูล (Serial Logs)",
+        desc: "หน้าต่าง Terminal แสดงข้อมูลชื่อคลาสหรือตัวเลขจำนวนนิ้วที่ถูกส่งเข้าบอร์ด KidBright32 แบบบรรทัดต่อบรรทัดแบบ Real-time",
+        placement: "top",
+        requiredMode: null
+      }
+    ];
+
+    function checkAutoStartTour() {
+      try {
+        const completed = localStorage.getItem(STORAGE_KEY_TOUR_COMPLETED);
+        if (completed !== "true") {
+          setTimeout(() => {
+            if (activePage === "studio" && !tourIsActive) {
+              startStudioTour(false);
+            }
+          }, 600);
+        }
+      } catch (e) {}
+    }
+
+    function startStudioTour(force = false) {
+      if (activePage !== "studio") {
+        navigateTo("studio");
+      }
+      tourInitialMode = currentMode;
+      tourIsActive = true;
+      tourCurrentStepIndex = 0;
+
+      const overlay = document.getElementById("tour-overlay-container");
+      if (overlay) overlay.classList.remove("hidden");
+
+      window.addEventListener("resize", syncTourPosition);
+      window.addEventListener("scroll", syncTourPosition, true);
+
+      renderTourStep();
+    }
+
+    function endStudioTour() {
+      tourIsActive = false;
+      const overlay = document.getElementById("tour-overlay-container");
+      if (overlay) overlay.classList.add("hidden");
+
+      const spotlight = document.getElementById("tour-spotlight");
+      const card = document.getElementById("tour-card");
+      if (spotlight) {
+        spotlight.style.top = "-9999px";
+        spotlight.style.left = "-9999px";
+      }
+      if (card) {
+        card.style.top = "-9999px";
+        card.style.left = "-9999px";
+      }
+
+      try {
+        localStorage.setItem(STORAGE_KEY_TOUR_COMPLETED, "true");
+      } catch (e) {}
+
+      window.removeEventListener("resize", syncTourPosition);
+      window.removeEventListener("scroll", syncTourPosition, true);
+
+      // กู้คืนโหมดเดิมก่อนเริ่มทัวร์
+      if (tourInitialMode && currentMode !== tourInitialMode) {
+        switchMode(tourInitialMode);
+      }
+    }
+
+    function nextStudioTourStep() {
+      if (tourCurrentStepIndex < studioTourSteps.length - 1) {
+        tourCurrentStepIndex++;
+        renderTourStep();
+      } else {
+        endStudioTour();
+      }
+    }
+
+    function prevStudioTourStep() {
+      if (tourCurrentStepIndex > 0) {
+        tourCurrentStepIndex--;
+        renderTourStep();
+      }
+    }
+
+    function renderTourStep() {
+      if (!tourIsActive) return;
+      const step = studioTourSteps[tourCurrentStepIndex];
+      if (!step) return;
+
+      // สลับโหมด AI อัตโนมัติเพื่อให้เห็นเครื่องมือของโหมดนั้นจริง
+      if (step.requiredMode && currentMode !== step.requiredMode) {
+        switchMode(step.requiredMode);
+      }
+
+      // ตรวจสอบให้แน่ใจว่าการ์ดเป้าหมายไม่ถูกย่อพับอยู่
+      if (step.targetId.startsWith("card-") || step.targetId.startsWith("tool-card-")) {
+        const baseId = step.targetId.replace("tool-card-", "card-");
+        const body = document.getElementById(baseId + "-body") || document.getElementById(step.targetId + "-body");
+        const icon = document.getElementById(baseId + "-icon") || document.getElementById(step.targetId + "-icon");
+        if (body && body.classList.contains("hidden")) {
+          body.classList.remove("hidden");
+          if (icon) icon.classList.remove("rotate-180");
+        }
+      }
+
+      const stepCurEl = document.getElementById("tour-step-current");
+      const stepTotalEl = document.getElementById("tour-step-total");
+      const titleEl = document.getElementById("tour-title");
+      const descEl = document.getElementById("tour-desc");
+      const btnPrev = document.getElementById("tour-btn-prev");
+      const btnNextText = document.getElementById("tour-btn-next-text");
+      const btnNextIcon = document.getElementById("tour-btn-next-icon");
+
+      if (stepCurEl) stepCurEl.innerText = tourCurrentStepIndex + 1;
+      if (stepTotalEl) stepTotalEl.innerText = studioTourSteps.length;
+      if (titleEl) titleEl.innerText = step.title;
+      if (descEl) descEl.innerHTML = step.desc;
+
+      if (btnPrev) {
+        if (tourCurrentStepIndex === 0) {
+          btnPrev.classList.add("hidden");
+        } else {
+          btnPrev.classList.remove("hidden");
+        }
+      }
+
+      const isLast = tourCurrentStepIndex === studioTourSteps.length - 1;
+      if (btnNextText) btnNextText.innerText = isLast ? "เสร็จสิ้น" : "ถัดไป";
+      if (btnNextIcon) {
+        if (isLast) {
+          btnNextIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>';
+        } else {
+          btnNextIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>';
+        }
+      }
+
+      // เลื่อนหน้าจอไปยังตำแหน่งเป้าหมายหลังจาก DOM เรนเดอร์
+      setTimeout(() => {
+        const targetEl = document.getElementById(step.targetId);
+        if (targetEl) {
+          targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          setTimeout(() => {
+            syncTourPosition();
+          }, 180);
+        }
+      }, 60);
+    }
+
+    function syncTourPosition() {
+      if (!tourIsActive) return;
+      const step = studioTourSteps[tourCurrentStepIndex];
+      if (!step) return;
+
+      const targetEl = document.getElementById(step.targetId);
+      const spotlight = document.getElementById("tour-spotlight");
+      const card = document.getElementById("tour-card");
+      if (!targetEl || !spotlight || !card) return;
+
+      const rect = targetEl.getBoundingClientRect();
+      const pad = 6;
+      spotlight.style.top = `${Math.max(0, rect.top - pad)}px`;
+      spotlight.style.left = `${Math.max(0, rect.left - pad)}px`;
+      spotlight.style.width = `${rect.width + pad * 2}px`;
+      spotlight.style.height = `${rect.height + pad * 2}px`;
+
+      const cardRect = card.getBoundingClientRect();
+      const cardW = cardRect.width || 360;
+      const cardH = cardRect.height || 180;
+      const margin = 14;
+
+      let top = 0;
+      let left = 0;
+
+      left = rect.left + (rect.width / 2) - (cardW / 2);
+
+      if (step.placement === "bottom") {
+        top = rect.bottom + margin;
+        if (top + cardH > window.innerHeight - 10) {
+          top = rect.top - cardH - margin;
+        }
+      } else if (step.placement === "top") {
+        top = rect.top - cardH - margin;
+        if (top < 60) {
+          top = rect.bottom + margin;
+        }
+      } else if (step.placement === "left") {
+        if (window.innerWidth >= 1024 && rect.left > cardW + margin) {
+          left = rect.left - cardW - margin;
+          top = rect.top + (rect.height / 2) - (cardH / 2);
+        } else {
+          top = rect.bottom + margin;
+        }
+      } else {
+        top = rect.bottom + margin;
+      }
+
+      left = Math.max(12, Math.min(window.innerWidth - cardW - 12, left));
+      top = Math.max(60, Math.min(window.innerHeight - cardH - 12, top));
+
+      card.style.top = `${top}px`;
+      card.style.left = `${left}px`;
+    }
+
+    // ปิด Modal ดูภาพตัวอย่าง & ควบคุมคีย์ลัดใน Tour
     document.addEventListener("keydown", (e) => {
+      if (tourIsActive) {
+        if (e.key === "Escape") {
+          endStudioTour();
+          return;
+        }
+        if (e.key === "ArrowRight" || e.key === "Enter") {
+          nextStudioTourStep();
+          return;
+        }
+        if (e.key === "ArrowLeft") {
+          prevStudioTourStep();
+          return;
+        }
+      }
+
       if (e.key === "Escape") {
         closeFaceSamplesModal();
       }
