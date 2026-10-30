@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>โรงเรียนแก่นนครวิทยาลัย | KidBright AI Vision Bridge</title>
+  
+  <!-- Google Fonts: Prompt & Sarabun for clean readability -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- TensorFlow.js & Teachable Machine Image Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Prompt', 'Sarabun', 'sans-serif'],
+          },
+          colors: {
+            knw: {
+              orange: '#EA580C',      // ส้มแก่นนครฯ
+              orangeHover: '#C2410C',
+              orangeLight: '#FFF7ED',
+              orangeBorder: '#FDBA74',
+              black: '#0F172A',       // ดำ/ชาร์โคล
+              dark: '#1E293B',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Prompt', 'Sarabun', sans-serif;
+    }
+    .webcam-container canvas {
+      border-radius: 0.75rem;
+      width: 100% !important;
+      height: 100% !important;
+      max-height: 440px;
+      object-fit: cover;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased">
+
+  <!-- Top Header Bar: สีส้ม-ดำ โรงเรียนแก่นนครวิทยาลัย -->
+  <header class="bg-white border-b-2 border-knw-orange shadow-sm sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Logo & School Branding -->
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-xl bg-knw-black text-knw-orange flex items-center justify-center font-bold shadow-sm border border-knw-orange">
+          <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-knw-black leading-tight flex items-center gap-2">
+            โรงเรียนแก่นนครวิทยาลัย
+            <span class="text-xs px-2 py-0.5 rounded-full bg-knw-orangeLight text-knw-orange border border-knw-orangeBorder font-semibold">KNW AI</span>
+          </h1>
+          <p class="text-xs text-slate-500 font-medium">ระบบส่งผลตรวจจับภาพ Teachable Machine สู่บอร์ด KidBright32</p>
+        </div>
+      </div>
+
+      <!-- Serial Connection Controls -->
+      <div class="flex items-center gap-3">
+        <!-- Status Indicator Pill -->
+        <div id="serial-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-300 text-xs font-medium text-slate-600 transition">
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+          <span>ยังไม่เชื่อมต่อบอร์ด</span>
+        </div>
+
+        <!-- Connect / Disconnect Button -->
+        <button 
+          id="btn-serial-connect" 
+          onclick="toggleSerial()"
+          class="flex items-center gap-2 px-4 py-2 bg-knw-black hover:bg-slate-800 text-white rounded-xl text-sm font-semibold transition shadow-sm border border-slate-700"
+        >
+          <svg class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          <span id="btn-serial-text">เชื่อมต่อ KidBright</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Content Area: ตาม Layout ภาพร่าง (Grid 2 ฝั่ง) -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- ============================================================== -->
+      <!-- ฝั่งซ้าย (Left Column): 
+           1. การ์ดใส่ลิงก์โมเดล + ปุ่มเริ่ม/จบ
+           2. หน้าจอกล้อง (Camera Preview)
+           3. การ์ดเลือกระดับความมั่นใจ
+           4. การ์ดทดสอบส่งค่า (ล่างสุด)
+      -->
+      <!-- ============================================================== -->
+      <div class="lg:col-span-7 space-y-4">
+        
+        <!-- การ์ดที่ 1 (บนสุด): ช่องกรอกลิงก์โมเดล พร้อมปุ่มเริ่ม/จบ -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+            ลิงก์โมเดล Teachable Machine:
+          </label>
+          <div class="flex items-center gap-2">
+            <input 
+              id="model-url" 
+              type="text" 
+              list="model-history-list"
+              placeholder="https://teachablemachine.withgoogle.com/models/xxxxxx/"
+              class="flex-1 px-4 py-2.5 border-2 border-slate-300 rounded-xl text-sm focus:outline-none focus:border-knw-orange focus:ring-1 focus:ring-knw-orange font-mono transition"
+              autocomplete="on"
+            />
+            <datalist id="model-history-list"></datalist>
+
+            <!-- ปุ่ม เริ่ม/จบ -->
+            <button 
+              id="btn-toggle-cam" 
+              onclick="toggleAppExecution()"
+              class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition shadow-sm flex items-center justify-center gap-2 shrink-0 cursor-pointer min-w-[110px]"
+            >
+              <svg id="icon-start" class="w-4 h-4 stroke-current" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              <span id="btn-toggle-text">เริ่ม</span>
+            </button>
+          </div>
+
+          <p id="model-status" class="text-xs text-slate-400 mt-2 font-medium">
+            ยังไม่ได้โหลดโมเดล (วางลิงก์แล้วกด "เริ่ม" ได้ทันที)
+          </p>
+        </div>
+
+        <!-- การ์ดที่ 2: หน้าจอกล้อง (Large Camera Preview Box) -->
+        <div class="bg-white p-3 rounded-2xl shadow-sm border-2 border-slate-300 relative overflow-hidden">
+          <div id="webcam-view" class="webcam-container w-full h-[360px] md:h-[420px] bg-slate-900 rounded-xl flex items-center justify-center overflow-hidden">
+            <!-- Placeholder เมื่อยังไม่เปิดกล้อง -->
+            <div id="cam-placeholder" class="text-center p-6 text-slate-400">
+              <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400 border border-slate-700">
+                <svg class="w-8 h-8 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
+                </svg>
+              </div>
+              <p class="text-sm font-semibold text-slate-300">กล้องยังไม่เริ่มทำงาน</p>
+              <p class="text-xs text-slate-500 mt-1">วางลิงก์โมเดลด้านบน แล้วกดปุ่ม "เริ่ม" เพื่อเปิดกล้องประมวลผล</p>
+            </div>
+          </div>
+
+          <!-- Badge แสดงสถานะมุมกล้อง -->
+          <div id="cam-live-indicator" class="hidden absolute top-5 left-5 px-3 py-1 bg-red-600 text-white rounded-full text-xs font-bold tracking-wider flex items-center gap-1.5 shadow-md">
+            <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+            <span>LIVE</span>
+          </div>
+        </div>
+
+        <!-- การ์ดที่ 3: สไลเดอร์เลือกระดับความมั่นใจ (แยกการ์ดต่างหาก) -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex-1">
+              <div class="flex items-center justify-between text-xs mb-1.5">
+                <span class="font-semibold text-slate-700">เลือกระดับความมั่นใจ (Confidence Threshold):</span>
+                <span id="threshold-val" class="font-bold text-knw-orange bg-knw-orangeLight px-2 py-0.5 rounded-md border border-knw-orangeBorder">
+                  80%
+                </span>
+              </div>
+              <input 
+                id="threshold-slider" 
+                type="range" 
+                min="50" 
+                max="95" 
+                value="80" 
+                step="5"
+                oninput="document.getElementById('threshold-val').innerText = this.value + '%'"
+                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-knw-orange"
+              />
+            </div>
+
+            <!-- ช่วงเวลาหน่วงการส่งข้อมูล -->
+            <div class="sm:w-44">
+              <div class="flex items-center justify-between text-xs mb-1.5">
+                <span class="text-slate-500 font-medium">ความถี่ในการส่ง:</span>
+                <span id="interval-val" class="font-semibold text-slate-700">500 ms</span>
+              </div>
+              <input 
+                id="interval-slider" 
+                type="range" 
+                min="200" 
+                max="2000" 
+                value="500" 
+                step="100"
+                oninput="document.getElementById('interval-val').innerText = this.value + ' ms'"
+                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-600"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- การ์ดที่ 4: ทดสอบค่า (แยกการ์ดต่างหาก เอาไว้ล่างสุด) -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-700 font-semibold shrink-0">ทดสอบส่งค่า:</span>
+            <input 
+              id="manual-test-text" 
+              type="text" 
+              value="HELLO" 
+              placeholder="พิมพ์ข้อความทดสอบ..."
+              class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-knw-orange font-mono"
+            />
+            <button 
+              id="btn-manual-send" 
+              onclick="sendManualTest()"
+              disabled
+              class="px-4 py-2 bg-slate-300 text-slate-500 rounded-lg text-xs font-semibold transition cursor-not-allowed shrink-0"
+            >
+              ส่งทดสอบ
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- ฝั่งขวา (Right Column): ผลการตรวจจับ (บน) + ประวัติการส่ง (ล่าง) -->
+      <!-- ============================================================== -->
+      <div class="lg:col-span-5 space-y-4">
+        
+        <!-- กล่องที่ 1 (บน): ผลการตรวจจับ (Detection Results) -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+            <div class="flex items-center gap-2 text-knw-black font-bold text-base">
+              <svg class="w-5 h-5 text-knw-orange stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+              <span>ผลการตรวจจับ</span>
+            </div>
+            <span id="detected-class-pill" class="text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 font-semibold">
+              รอประมวลผล
+            </span>
+          </div>
+
+          <!-- รายการผลลัพธ์ของคลาสต่างๆ (Progress bars) -->
+          <div id="label-container" class="space-y-3.5 min-h-[160px] flex flex-col justify-center">
+            <div class="text-center py-8 text-slate-400">
+              <svg class="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.143 2.143L15 7.5"/>
+              </svg>
+              <p class="text-xs font-medium">รอเปิดกล้องเพื่อประมวลผลภาพ...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- กล่องที่ 2 (ล่าง): ประวัติการส่ง (Log) พร้อมปุ่มล้าง -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+            <div class="flex items-center gap-2 text-knw-black font-bold text-base">
+              <svg class="w-5 h-5 text-knw-orange stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <span>ประวัติการส่ง (Log)</span>
+            </div>
+            <button 
+              onclick="clearLog()" 
+              class="text-xs text-slate-500 hover:text-rose-600 font-semibold px-2 py-1 rounded hover:bg-slate-100 transition flex items-center gap-1"
+            >
+              <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              <span>ล้าง</span>
+            </button>
+          </div>
+
+          <!-- กล่องแสดงข้อความ Console Log -->
+          <div 
+            id="log-box" 
+            class="h-56 bg-slate-900 text-slate-100 p-3 rounded-xl font-mono text-xs overflow-y-auto space-y-1.5 shadow-inner"
+          >
+            <div class="text-slate-500">// พร้อมรับส่งข้อมูลผ่าน Serial Port...</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500">
+    โรงเรียนแก่นนครวิทยาลัย | พัฒนาเพื่อการเรียนรู้ปัญญาประดิษฐ์และสะเต็มศึกษา (STEM Education)
+  </footer>
+
+  <!-- ============================================================== -->
+  <!-- JavaScript Logic -->
+  <!-- ============================================================== -->
+  <script>
+    let model, webcam, maxPredictions;
+    let isWebcamRunning = false;
+    let serialPort = null;
+    let serialReader = null;
+    let keepReading = false;
+    let readerClosedPromise = null;
+    let lastSendTime = 0;
+
+    const textEncoder = new TextEncoder();
+    const textDecoder = new TextDecoder();
+
+    // 0. Model URL History Management (LocalStorage & Datalist)
+    const STORAGE_KEY_HISTORY = "kb_model_url_history";
+    const STORAGE_KEY_LAST = "kb_model_url_last";
+
+    function getModelHistory() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_HISTORY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function renderModelHistory() {
+      const history = getModelHistory();
+      const datalist = document.getElementById("model-history-list");
+      if (!datalist) return;
+
+      datalist.innerHTML = "";
+      history.forEach(url => {
+        const opt = document.createElement("option");
+        opt.value = url;
+        datalist.appendChild(opt);
+      });
+    }
+
+    function saveModelToHistory(url) {
+      if (!url) return;
+      let history = getModelHistory();
+      history = history.filter(item => item !== url);
+      history.unshift(url);
+      if (history.length > 10) history = history.slice(0, 10);
+
+      try {
+        localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history));
+        localStorage.setItem(STORAGE_KEY_LAST, url);
+      } catch (e) {
+        console.warn("Could not save history to localStorage:", e);
+      }
+
+      renderModelHistory();
+    }
+
+    function clearModelHistory() {
+      localStorage.removeItem(STORAGE_KEY_HISTORY);
+      localStorage.removeItem(STORAGE_KEY_LAST);
+      renderModelHistory();
+    }
+
+    function loadModelHistory() {
+      renderModelHistory();
+      const lastUrl = localStorage.getItem(STORAGE_KEY_LAST);
+      const input = document.getElementById("model-url");
+      if (lastUrl && input && !input.value) {
+        input.value = lastUrl;
+      }
+    }
+
+    // 2. Master Toggle: ปุ่ม "เริ่ม / จบ"
+    async function toggleAppExecution() {
+      if (!isWebcamRunning) {
+        // เริ่มต้น: โหลดโมเดล (ถ้ายังไม่โหลด) แล้วเปิดกล้อง
+        const ok = await ensureModelLoaded();
+        if (ok) {
+          await startWebcam();
+        }
+      } else {
+        // จบการทำงาน: ปิดกล้อง
+        await stopWebcam();
+      }
+    }
+
+    // ตรวจสอบและโหลดโมเดล
+    async function ensureModelLoaded() {
+      const urlInput = document.getElementById("model-url").value.trim();
+      const statusText = document.getElementById("model-status");
+
+      if (!urlInput) {
+        alert("กรุณากรอกลิงก์โมเดล Teachable Machine ก่อนกดเริ่ม");
+        return false;
+      }
+
+      saveModelToHistory(urlInput);
+
+      if (model) return true; // โหลดแล้ว
+
+      const modelURL = urlInput.endsWith("/") ? urlInput + "model.json" : urlInput + "/model.json";
+      const metadataURL = urlInput.endsWith("/") ? urlInput + "metadata.json" : urlInput + "/metadata.json";
+
+      statusText.innerText = "กำลังดาวน์โหลดและเตรียมโมเดล AI...";
+      statusText.className = "text-xs text-knw-orange font-medium mt-2";
+
+      try {
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+        statusText.innerText = `โหลดโมเดลสำเร็จ (${maxPredictions} คลาสพร้อมใช้งาน)`;
+        statusText.className = "text-xs text-emerald-600 font-semibold mt-2";
+        return true;
+      } catch (err) {
+        console.error(err);
+        statusText.innerText = "โหลดโมเดลไม่สำเร็จ: ตรวจสอบความถูกต้องของ URL หรืออินเทอร์เน็ต";
+        statusText.className = "text-xs text-rose-600 font-semibold mt-2";
+        return false;
+      }
+    }
+
+    // เริ่มกล้อง
+    async function startWebcam() {
+      const btn = document.getElementById("btn-toggle-cam");
+      const btnText = document.getElementById("btn-toggle-text");
+      const icon = document.getElementById("icon-start");
+      const placeholder = document.getElementById("cam-placeholder");
+      const webcamView = document.getElementById("webcam-view");
+      const liveBadge = document.getElementById("cam-live-indicator");
+
+      btnText.innerText = "กำลังเปิด...";
+
+      try {
+        const flip = true;
+        webcam = new tmImage.Webcam(480, 360, flip);
+        await webcam.setup();
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        placeholder.style.display = "none";
+        webcamView.innerHTML = "";
+        webcamView.appendChild(webcam.canvas);
+        liveBadge.classList.remove("hidden");
+
+        btnText.innerText = "จบ";
+        btn.className = "px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-base font-bold transition shadow-sm flex items-center justify-center gap-2 shrink-0 cursor-pointer min-w-[120px]";
+        icon.innerHTML = '<rect x="6" y="6" width="12" height="12"/>';
+        isWebcamRunning = true;
+      } catch (err) {
+        console.error("Camera start error:", err);
+        alert("ไม่สามารถเปิดกล้องได้: ตรวจสอบสิทธิ์การเข้าถึงกล้อง");
+        btnText.innerText = "เริ่ม";
+      }
+    }
+
+    // ปิดกล้อง
+    async function stopWebcam() {
+      const btn = document.getElementById("btn-toggle-cam");
+      const btnText = document.getElementById("btn-toggle-text");
+      const icon = document.getElementById("icon-start");
+      const placeholder = document.getElementById("cam-placeholder");
+      const webcamView = document.getElementById("webcam-view");
+      const liveBadge = document.getElementById("cam-live-indicator");
+      const pill = document.getElementById("detected-class-pill");
+
+      if (webcam) {
+        try { webcam.stop(); } catch (e) {}
+      }
+
+      webcamView.innerHTML = "";
+      placeholder.style.display = "block";
+      webcamView.appendChild(placeholder);
+      liveBadge.classList.add("hidden");
+
+      btnText.innerText = "เริ่ม";
+      btn.className = "px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-base font-bold transition shadow-sm flex items-center justify-center gap-2 shrink-0 cursor-pointer min-w-[120px]";
+      icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+      isWebcamRunning = false;
+
+      pill.innerText = "หยุดทำงาน";
+      pill.className = "text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 font-semibold";
+    }
+
+    // ลูปประมวลผลกล้อง
+    async function loop() {
+      if (isWebcamRunning) {
+        webcam.update();
+        await predict();
+        window.requestAnimationFrame(loop);
+      }
+    }
+
+    // 3. Real-time Prediction & UI Update
+    async function predict() {
+      if (!model || !webcam.canvas) return;
+      const prediction = await model.predict(webcam.canvas);
+      const labelContainer = document.getElementById("label-container");
+      const pill = document.getElementById("detected-class-pill");
+      const threshold = parseInt(document.getElementById("threshold-slider").value) / 100;
+      const intervalMs = parseInt(document.getElementById("interval-slider").value);
+
+      labelContainer.innerHTML = "";
+
+      let bestClass = null;
+      let highestProb = 0;
+
+      for (let i = 0; i < maxPredictions; i++) {
+        const className = prediction[i].className;
+        const prob = prediction[i].probability;
+        const percent = Math.round(prob * 100);
+
+        if (prob > highestProb) {
+          highestProb = prob;
+          bestClass = className;
+        }
+
+        const isWinning = prob >= threshold && prob === highestProb;
+
+        const row = document.createElement("div");
+        row.className = "text-sm";
+        row.innerHTML = `
+          <div class="flex justify-between font-semibold mb-1 ${isWinning ? 'text-knw-orange font-bold' : 'text-slate-700'}">
+            <span>${className}</span>
+            <span>${percent}%</span>
+          </div>
+          <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden p-0.5 border border-slate-200">
+            <div 
+              class="${isWinning ? 'bg-knw-orange' : 'bg-slate-400'} h-full rounded-full transition-all duration-150" 
+              style="width: ${percent}%"
+            ></div>
+          </div>
+        `;
+        labelContainer.appendChild(row);
+      }
+
+      // อัปเดต Pill ด้านบน
+      if (bestClass && highestProb >= threshold) {
+        pill.innerText = `${bestClass} (${Math.round(highestProb * 100)}%)`;
+        pill.className = "text-xs px-2.5 py-1 rounded-full bg-knw-orangeLight text-knw-orange border border-knw-orangeBorder font-bold";
+      } else {
+        pill.innerText = "ความมั่นใจยังไม่ถึงเกณฑ์";
+        pill.className = "text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 font-medium";
+      }
+
+      // ส่งค่า Serial เมื่อผ่านเกณฑ์
+      const now = Date.now();
+      if (bestClass && highestProb >= threshold && (now - lastSendTime >= intervalMs)) {
+        await sendToSerial(bestClass);
+        lastSendTime = now;
+      }
+    }
+
+    // 4. Web Serial API Integration (Clean & Unlocked Streams)
+    async function toggleSerial() {
+      const btn = document.getElementById("btn-serial-connect");
+      const btnText = document.getElementById("btn-serial-text");
+      const badge = document.getElementById("serial-badge");
+      const btnManual = document.getElementById("btn-manual-send");
+
+      if (!("serial" in navigator)) {
+        alert("เบราว์เซอร์ไม่รองรับ Web Serial API กรุณาใช้งานผ่าน Google Chrome หรือ Microsoft Edge");
+        return;
+      }
+
+      if (!serialPort) {
+        try {
+          serialPort = await navigator.serial.requestPort();
+          await serialPort.open({ baudRate: 115200 });
+
+          keepReading = true;
+          readerClosedPromise = readSerialLoop();
+
+          badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span><span>เชื่อมต่อ KidBright แล้ว (115200)</span>';
+          badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-300 text-xs font-semibold text-emerald-700 transition";
+          
+          btnText.innerText = "ตัดการเชื่อมต่อ";
+          btn.className = "flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-semibold transition shadow-sm border border-rose-500";
+          
+          btnManual.disabled = false;
+          btnManual.className = "px-3 py-1.5 bg-knw-black hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition cursor-pointer shrink-0";
+
+          appendLog("[SYS] เชื่อมต่อกับพอร์ต Serial สำเร็จ");
+        } catch (err) {
+          console.error("Serial connection error:", err);
+          appendLog("[SYS] ไม่สามารถเชื่อมต่อ Serial: " + err.message);
+          serialPort = null;
+        }
+      } else {
+        await disconnectSerial();
+      }
+    }
+
+    async function disconnectSerial() {
+      const btn = document.getElementById("btn-serial-connect");
+      const btnText = document.getElementById("btn-serial-text");
+      const badge = document.getElementById("serial-badge");
+      const btnManual = document.getElementById("btn-manual-send");
+
+      keepReading = false;
+
+      if (serialReader) {
+        try { await serialReader.cancel(); } catch (e) {}
+      }
+
+      if (readerClosedPromise) {
+        try { await readerClosedPromise; } catch (e) {}
+        readerClosedPromise = null;
+      }
+
+      if (serialPort) {
+        try {
+          await serialPort.close();
+          appendLog("[SYS] ตัดการเชื่อมต่อ Serial เรียบร้อย (คืนพอร์ตให้ KidBright IDE แล้ว)");
+        } catch (err) {
+          console.error("Error closing port:", err);
+          appendLog("[SYS] ปิดพอร์ตไม่สำเร็จ: " + err.message);
+        }
+        serialPort = null;
+      }
+
+      badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span><span>ยังไม่เชื่อมต่อบอร์ด</span>';
+      badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-300 text-xs font-medium text-slate-600 transition";
+
+      btnText.innerText = "เชื่อมต่อ KidBright";
+      btn.className = "flex items-center gap-2 px-4 py-2 bg-knw-black hover:bg-slate-800 text-white rounded-xl text-sm font-semibold transition shadow-sm border border-slate-700";
+
+      btnManual.disabled = true;
+      btnManual.className = "px-3 py-1.5 bg-slate-300 text-slate-500 rounded-lg text-xs font-semibold transition cursor-not-allowed shrink-0";
+    }
+
+    async function readSerialLoop() {
+      if (!serialPort || !serialPort.readable) return;
+      try {
+        serialReader = serialPort.readable.getReader();
+        let lineBuffer = "";
+
+        while (keepReading) {
+          const { value, done } = await serialReader.read();
+          if (done) break;
+          if (value) {
+            lineBuffer += textDecoder.decode(value, { stream: true });
+            const lines = lineBuffer.split("\n");
+            lineBuffer = lines.pop();
+            for (const line of lines) {
+              const text = line.trim();
+              if (text) {
+                appendLog(`[RX] บอร์ดตอบกลับ: "${text}"`);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        if (keepReading) {
+          console.warn("Serial reading error:", err);
+        }
+      } finally {
+        if (serialReader) {
+          try { serialReader.releaseLock(); } catch (e) {}
+          serialReader = null;
+        }
+      }
+    }
+
+    async function sendToSerial(label) {
+      if (!serialPort || !serialPort.writable) return;
+      try {
+        const writer = serialPort.writable.getWriter();
+        await writer.write(textEncoder.encode(label + "\n"));
+        writer.releaseLock();
+        appendLog(`[TX] ส่งข้อมูล: "${label}"`);
+      } catch (err) {
+        console.error("Failed to send data:", err);
+      }
+    }
+
+    async function sendManualTest() {
+      const input = document.getElementById("manual-test-text");
+      const val = input.value.trim() || "TEST";
+      await sendToSerial(val);
+    }
+
+    // Logger
+    function appendLog(msg) {
+      const logBox = document.getElementById("log-box");
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement("div");
+
+      if (msg.startsWith("[TX]")) {
+        div.className = "text-knw-orange font-medium";
+      } else if (msg.startsWith("[RX]")) {
+        div.className = "text-emerald-400 font-medium";
+      } else {
+        div.className = "text-slate-400";
+      }
+
+      div.innerText = `[${time}] ${msg}`;
+      logBox.appendChild(div);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function clearLog() {
+      document.getElementById("log-box").innerHTML = '<div class="text-slate-500">// พร้อมรับส่งข้อมูลผ่าน Serial Port...</div>';
+    }
+
+    // Before unload
+    window.addEventListener("beforeunload", () => {
+      if (serialPort) {
+        disconnectSerial();
+      }
+    });
+
+    // On Load
+    window.addEventListener("DOMContentLoaded", () => {
+      loadModelHistory();
+    });
+    loadModelHistory();
+  </script>
+</body>
+</html>

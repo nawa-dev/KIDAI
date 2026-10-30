@@ -1,0 +1,2495 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KIDAI | KidBright AI Studio</title>
+  <link rel="icon" type="image/png" href="logonotext.png">
+  <link rel="apple-touch-icon" href="logonotext.png">
+  
+  <!-- Google Fonts: Prompt & Sarabun -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- TensorFlow.js, MobileNet & KNN Classifier (โหมดจดจำใบหน้า) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest/dist/mobilenet.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier@latest/dist/knn-classifier.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@latest/dist/blazeface.min.js"></script>
+
+  <!-- MediaPipe Hands & Drawing Utils (โหมดนับจำนวนนิ้ว) -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Prompt', 'Sarabun', 'sans-serif'],
+          },
+          colors: {
+            knw: {
+              orange: '#EA580C',
+              orangeHover: '#C2410C',
+              orangeLight: '#FFF7ED',
+              orangeBorder: '#FDBA74',
+              black: '#0F172A',
+              dark: '#1E293B',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Prompt', 'Sarabun', sans-serif;
+    }
+    .video-canvas-container {
+      position: relative;
+      width: 100%;
+      height: 380px;
+      background: #0f172a;
+      border-radius: 0.375rem;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .video-canvas-container:fullscreen,
+    .video-canvas-container:-webkit-full-screen {
+      width: 100vw !important;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      border-radius: 0 !important;
+      background: #000 !important;
+    }
+    .video-canvas-container video,
+    .video-canvas-container canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1); /* กระจกเงา */
+    }
+    .scroll-custom::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .scroll-custom::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 2px;
+    }
+    .scroll-custom::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    @keyframes pulse-fast {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .animate-pulse-fast {
+      animation: pulse-fast 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-100/90 text-slate-800 min-h-screen flex flex-col antialiased">
+
+  <!-- ========================================== -->
+  <!-- Top Header Bar: VS Code Minimal Flat Style (แสดงเฉพาะในหน้า Studio) -->
+  <!-- ========================================== -->
+  <header id="main-header" class="hidden bg-white border-b border-slate-200 sticky top-0 z-30 transition-all">
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- คลิกที่ Logo หรือชื่อเว็บ เพื่อกลับหน้า Welcome ได้ทันที -->
+      <div 
+        onclick="navigateTo('welcome')" 
+        title="KIDAI"
+        class="flex items-center gap-2.5 cursor-pointer group select-none"
+      >
+        <img 
+          src="logonotext.png" 
+          alt="KIDAI Logo" 
+          class="w-9 h-9 md:w-10 md:h-10 object-contain shrink-0 group-hover:scale-105 transition"
+        />
+        <div class="flex items-baseline gap-1.5">
+          <h1 class="text-lg md:text-xl font-bold tracking-tight leading-tight select-none">
+            <span class="text-slate-900 group-hover:text-knw-orange transition">KID</span><span class="text-knw-orange">AI</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- ปุ่มสลับ Model แบบ Minimal Flat TextButton -->
+      <div class="flex items-center gap-1">
+        <!-- Tab 1: Face Recognition -->
+        <button 
+          id="tab-btn-face" 
+          onclick="switchMode('face')"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition bg-slate-100 text-knw-orange cursor-pointer"
+        >
+          <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          </svg>
+          <span>1. โมเดลจดจำใบหน้า</span>
+        </button>
+
+        <!-- Tab 2: Hand Finger Counter -->
+        <button 
+          id="tab-btn-hand" 
+          onclick="switchMode('hand')"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition text-slate-600 hover:text-slate-900 hover:bg-slate-50 cursor-pointer"
+        >
+          <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V4a1.5 1.5 0 013 0v4m0 0a1.5 1.5 0 013 0v3m0 0a1.5 1.5 0 013 0v4"/>
+          </svg>
+          <span>2. โมเดลนับจำนวนนิ้ว</span>
+        </button>
+      </div>
+
+      <!-- Serial Controls แบบ Flat Split Button Minimal -->
+      <div class="flex items-center gap-3">
+        <!-- ข้อความแสดงสถานะเชื่อมต่อ (ไม่มีกรอบกล่องหนา) -->
+        <div id="serial-badge" class="hidden items-center gap-1.5 text-xs font-mono text-emerald-600 transition">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span id="serial-badge-text">เชื่อมต่อ KidBright แล้ว</span>
+        </div>
+
+        <div class="flex items-center rounded bg-knw-orange overflow-hidden text-xs">
+          <button 
+            id="btn-serial-connect" 
+            onclick="toggleSerial(false)"
+            class="flex items-center gap-1.5 px-3 py-1.5 hover:bg-knw-orangeHover text-white font-medium transition cursor-pointer"
+          >
+            <svg class="w-3.5 h-3.5 stroke-current text-white" fill="none" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            <span id="btn-serial-text">เชื่อมต่อ KidBright</span>
+          </button>
+
+          <!-- ปุ่มเลือกพอร์ตใหม่ -->
+          <button 
+            id="btn-serial-change" 
+            onclick="toggleSerial(true)"
+            title="เปลี่ยนบอร์ด / เลือก COM Port ใหม่"
+            class="px-2 py-1.5 hover:bg-orange-700 text-white/80 hover:text-white border-l border-orange-700 transition cursor-pointer flex items-center justify-center"
+          >
+            <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- 1. หน้า WELCOME (ยินดีต้อนรับ & แนะนำระบบ)  -->
+  <!-- ========================================== -->
+  <div id="view-page-welcome" class="flex-1 w-full max-w-5xl mx-auto px-4 py-8 md:py-12 flex flex-col justify-center animate-fade-in">
+    
+    <!-- Hero Header -->
+    <div class="text-center max-w-2xl mx-auto space-y-4 mb-10">
+      <div class="flex flex-col items-center justify-center gap-2 mb-1">
+        <img src="logonotext.png" alt="KIDAI Logo" class="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-sm hover:scale-105 transition" />
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mt-1 select-none">
+          <span class="text-slate-900">KID</span><span class="text-knw-orange">AI</span>
+        </h1>
+      </div>
+      <div class="inline-flex items-center gap-2 text-slate-500 text-xs md:text-sm font-mono">
+        <span class="w-2 h-2 rounded-full bg-knw-orange"></span>
+        <span>AI Studio for KidBright32</span>
+      </div>
+      
+      <h2 class="text-lg md:text-xl font-medium text-slate-700 tracking-tight leading-tight">
+        สตูดิโอสร้างและทดลองโมเดล AI Vision บนเบราว์เซอร์
+      </h2>
+      
+      <p class="text-slate-600 text-xs md:text-sm leading-relaxed">
+        <strong class="font-bold text-slate-900">KID<span class="text-knw-orange">AI</span></strong> — ระบบฝังโมเดลปัญญาประดิษฐ์ในตัว ประมวลผลบนเครื่องของคุณแบบ 100% Client-side รวดเร็วและปลอดภัย พร้อมส่งผลลัพธ์ผ่านสาย USB Serial สู่บอร์ด <b>KidBright32</b> ทันที
+      </p>
+
+      <div class="pt-2 flex flex-wrap items-center justify-center gap-3">
+        <button 
+          onclick="navigateTo('studio')" 
+          class="px-5 py-2.5 bg-knw-orange hover:bg-knw-orangeHover active:bg-orange-700 text-white rounded text-xs font-medium transition flex items-center gap-2 cursor-pointer select-none shadow-sm hover:shadow"
+        >
+          <span>เข้าสู่หน้าสตูดิโอ</span>
+          <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+          </svg>
+        </button>
+
+        <a 
+          href="ai_serial.zip" 
+          download="ai_serial.zip"
+          class="px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 hover:text-knw-orange border border-slate-200 hover:border-orange-300 rounded text-xs font-medium transition flex items-center gap-2 cursor-pointer select-none group"
+          title="ดาวน์โหลดปลั๊กอินสำหรับติดตั้งใน KidBright IDE (ai_serial.zip)"
+        >
+          <svg class="w-3.5 h-3.5 text-slate-500 group-hover:text-knw-orange transition stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+          </svg>
+          <span>ดาวน์โหลด Plugin (.zip)</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- 2 Main Model Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+      
+      <!-- Card 1: Face Recognition -->
+      <div class="bg-white rounded-md p-6 border border-slate-200 hover:border-slate-300 transition flex flex-col justify-between group">
+        <div>
+          <div class="text-slate-800 group-hover:text-knw-orange transition mb-3">
+            <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-semibold text-slate-900 mb-1 flex items-center justify-between">
+            <span>1. โมเดลจดจำใบหน้า</span>
+            <span class="text-xs text-slate-400 font-mono font-normal">Face Recognition</span>
+          </h3>
+          <p class="text-xs text-slate-500 leading-relaxed mb-5">
+            กำหนดคลาส ถ่ายภาพจากกล้องแบบกดค้าง หรืออัปโหลดรูปภาพใบหน้าเพื่อเทรนโมเดลจำแนกบุคคล พร้อมระบบตรวจจับคนแปลกหน้าอัตโนมัติ
+          </p>
+
+          <ul class="text-xs text-slate-600 space-y-2 mb-6">
+            <li class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>BlazeFace ตีกรอบและ Crop เฉพาะใบหน้าจริง</span>
+            </li>
+            <li class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>ระบบปฏิเสธคนแปลกหน้า (Unknown Person) แม่นยำ</span>
+            </li>
+            <li class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>ส่งชื่อคลาสเข้า KidBright32 ทาง Serial อัตโนมัติ</span>
+            </li>
+          </ul>
+        </div>
+
+        <button 
+          onclick="navigateTo('studio', 'face')" 
+          class="w-full py-2 px-3 bg-slate-900 hover:bg-knw-orange text-white rounded text-xs font-medium transition flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          <span>เปิดใช้งานโมเดลจดจำใบหน้า</span>
+          <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Card 2: Hand Finger Counter -->
+      <div class="bg-white rounded-md p-6 border border-slate-200 hover:border-slate-300 transition flex flex-col justify-between group">
+        <div>
+          <div class="text-slate-800 group-hover:text-knw-orange transition mb-3">
+            <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V4a1.5 1.5 0 013 0v4m0 0a1.5 1.5 0 013 0v3m0 0a1.5 1.5 0 013 0v4"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-semibold text-slate-900 mb-1 flex items-center justify-between">
+            <span>2. โมเดลนับจำนวนนิ้ว</span>
+            <span class="text-xs text-slate-400 font-mono font-normal">MediaPipe Hands</span>
+          </h3>
+          <p class="text-xs text-slate-500 leading-relaxed mb-5">
+            สแกนข้อนิ้วมือ 21 จุดแบบเรียลไทม์ 60 FPS นับจำนวนนิ้วที่ชูขึ้น 0 ถึง 5 นิ้ว พร้อมแสดงผลตัวเลขขนาดใหญ่และวาดโครงกระดูกมือ
+          </p>
+
+          <ul class="text-xs text-slate-600 space-y-2 mb-6">
+            <li class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>ตรวจจับรวดเร็ว 60 FPS ด้วย MediaPipe Hands</span>
+            </li>
+            <li class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>ส่งค่าตัวเลขเดี่ยว 0 ถึง 5 เข้า KidBright32 ทันที</span>
+            </li>
+            <li class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>รองรับทั้งมือซ้ายและมือขวา พร้อมโหมดเต็มจอ Fullscreen</span>
+            </li>
+          </ul>
+        </div>
+
+        <button 
+          onclick="navigateTo('studio', 'hand')" 
+          class="w-full py-2 px-3 bg-slate-900 hover:bg-knw-orange text-white rounded text-xs font-medium transition flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          <span>เปิดใช้งานโมเดลนับนิ้ว</span>
+          <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Quick Steps Footer Info -->
+    <div class="bg-white p-5 rounded-md border border-slate-200 text-xs text-slate-600 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="flex items-start gap-3">
+        <span class="text-sm font-mono font-semibold text-knw-orange shrink-0">01</span>
+        <div>
+          <strong class="text-slate-800 block font-medium">ติดตั้ง Plugin ใน KidBright IDE</strong>
+          <span class="text-slate-500">ดาวน์โหลด ai_serial.zip และติดตั้งผ่านเมนู Plugins</span>
+        </div>
+      </div>
+      <div class="flex items-start gap-3">
+        <span class="text-sm font-mono font-semibold text-knw-orange shrink-0">02</span>
+        <div>
+          <strong class="text-slate-800 block font-medium">เสียบสาย USB & เชื่อมต่อบอร์ด</strong>
+          <span class="text-slate-500">เชื่อมต่อ KidBright32 แล้วกดปุ่มเชื่อมต่อด้านบน</span>
+        </div>
+      </div>
+      <div class="flex items-start gap-3">
+        <span class="text-sm font-mono font-semibold text-knw-orange shrink-0">03</span>
+        <div>
+          <strong class="text-slate-800 block font-medium">เปิดกล้องส่งข้อมูล</strong>
+          <span class="text-slate-500">เปิดกล้อง ผลตรวจจับจะถูกส่งเข้าบอร์ดทันที</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plugin Download Banner Card -->
+    <div class="mt-4 bg-white p-4 rounded-md border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded bg-orange-50 border border-orange-200 text-knw-orange flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <strong class="text-xs font-semibold text-slate-800">ปลั๊กอิน KidBright IDE (AI Serial Plugin)</strong>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">ai_serial.zip</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-0.5">
+            นำไฟล์ .zip ไปติดตั้งผ่านเมนู <b>Plugins &gt; Install Plugins</b> ในโปรแกรม KidBright IDE เพื่อเปิดใช้บล็อกอ่านค่า Serial
+          </p>
+        </div>
+      </div>
+
+      <a 
+        href="ai_serial.zip" 
+        download="ai_serial.zip"
+        class="shrink-0 px-3.5 py-2 bg-slate-900 hover:bg-knw-orange text-white rounded text-xs font-medium transition flex items-center gap-2 cursor-pointer select-none"
+      >
+        <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+        </svg>
+        <span>ดาวน์โหลด Plugin .zip</span>
+      </a>
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2. หน้า STUDIO (หน้าเทรนและทดลองโมเดล AI)    -->
+  <!-- ========================================== -->
+  <div id="view-page-studio" class="hidden flex-1 w-full flex flex-col">
+
+  <!-- ========================================== -->
+  <!-- Main Grid Content Area                     -->
+  <!-- ========================================== -->
+  <main class="max-w-7xl mx-auto px-4 py-5 flex-1 w-full">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      
+      <!-- ============================================================== -->
+      <!-- ฝั่งซ้าย (Left Column): กล้อง Preview                           -->
+      <!-- ============================================================== -->
+      <div class="lg:col-span-6 flex flex-col gap-4 lg:sticky lg:top-16">
+        
+        <!-- กล่องกล้องหลัก (Camera Canvas Preview View) - Minimal Flat Style -->
+        <div class="bg-white p-3 rounded-md border border-slate-200 overflow-hidden">
+          <div class="video-canvas-container">
+            <!-- Video feed จากกล้อง (ซ่อนไว้ ใช้ดึงเฟรม) -->
+            <video id="webcam-video" playsinline muted autoplay></video>
+            <!-- Canvas สำหรับวาดภาพและ Overlay Landmarks / Face Bounding Box -->
+            <canvas id="output-canvas"></canvas>
+
+            <!-- Placeholder ก่อนเริ่มกล้อง -->
+            <div id="cam-placeholder" class="text-center p-6 text-slate-400 z-10">
+              <div class="w-10 h-10 mx-auto mb-2 text-slate-500 flex items-center justify-center">
+                <svg class="w-8 h-8 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
+                </svg>
+              </div>
+              <p class="text-xs font-medium text-slate-300">กล้องยังไม่ได้เปิดทำงาน</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">กดปุ่ม "เปิดกล้องทำงาน" ด้านล่างเพื่อเริ่มการตรวจจับ</p>
+            </div>
+
+            <!-- Badge Live แสดงมุมกล้อง -->
+            <div id="cam-live-indicator" class="hidden absolute top-3 left-3 px-2 py-0.5 bg-red-600 text-white rounded text-[11px] font-mono font-medium tracking-wider flex items-center gap-1.5 z-20">
+              <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse-fast"></span>
+              <span id="cam-live-text">LIVE</span>
+            </div>
+
+            <!-- ปุ่มขยายเต็มหน้าจอ (Floating Fullscreen Button) -->
+            <button 
+              id="btn-floating-fullscreen" 
+              onclick="toggleFullscreen()" 
+              title="แสดงเต็มหน้าจอ (Fullscreen)"
+              class="absolute top-3 right-3 p-1.5 bg-slate-900/80 hover:bg-slate-900 text-slate-300 hover:text-white rounded transition z-20 cursor-pointer flex items-center justify-center"
+            >
+              <svg id="icon-fs-maximize" class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"/>
+              </svg>
+              <svg id="icon-fs-minimize" class="hidden w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"/>
+              </svg>
+            </button>
+
+            <!-- Overlay ผลลัพธ์บนจอกล้องโดยตรง -->
+            <div id="canvas-overlay-banner" class="hidden absolute bottom-3 inset-x-3 bg-slate-900/90 text-white px-3 py-2 rounded z-20 flex items-center justify-between">
+              <div class="flex items-center gap-2 text-xs font-medium">
+                <span class="text-slate-400">ตรวจพบ:</span>
+                <span id="canvas-overlay-label" class="text-knw-orange font-bold text-sm">-</span>
+              </div>
+              <div id="canvas-overlay-sub" class="text-xs text-slate-300 font-mono">ความมั่นใจ: 0%</div>
+            </div>
+          </div>
+
+          <!-- แถบควบคุมกล้องใต้ภาพ: Flat TextButton -->
+          <div class="mt-2.5 flex items-center justify-between gap-2">
+            <button 
+              id="btn-toggle-cam" 
+              onclick="toggleCamera()"
+              class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded text-xs font-medium transition flex items-center justify-center gap-1.5 cursor-pointer select-none"
+            >
+              <svg id="icon-cam-play" class="w-3.5 h-3.5 stroke-current" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              <span id="btn-toggle-cam-text">เปิดกล้องทำงาน</span>
+            </button>
+
+            <!-- สลับกล้อง (หน้า/หลัง) ถ้ามี -->
+            <button 
+              onclick="switchCameraFacing()" 
+              title="สลับกล้อง"
+              class="p-2 bg-transparent hover:bg-slate-100 text-slate-600 rounded border border-slate-200 transition cursor-pointer"
+            >
+              <svg class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- ฝั่งขวา (Right Column): เครื่องมือ AI + ตั้งค่า + Serial Log      -->
+      <!-- ============================================================== -->
+      <div id="right-column-tools" class="lg:col-span-6 flex flex-col gap-4">
+        
+        <!-- ========================================================== -->
+        <!-- Tool 1: โมเดล AI (Face Recognition / Finger Counter)        -->
+        <!-- ========================================================== -->
+        <div id="tool-card-ai" class="draggable-tool-card flex flex-col gap-4 transition-all duration-150">
+          
+          <!-- ส่วนที่ 1: กล่องการทำงานของ MODE 1: FACE RECOGNITION -->
+          <div id="view-mode-face" class="flex flex-col gap-4">
+            
+            <!-- การ์ด 3: แผงกำหนดคลาสใบหน้า + ปุ่มเพิ่มคลาส + สถานะโมเดล - Minimal Flat Style -->
+            <div id="card-face-classes" class="bg-white rounded-md border border-slate-200 overflow-hidden">
+              
+              <!-- Header การ์ดคลาส -->
+              <div 
+                onclick="toggleCardCollapse('card-face-classes')" 
+                class="px-4 py-3 hover:bg-slate-50/60 transition cursor-pointer flex items-center justify-between border-b border-slate-100 flex-wrap gap-2 select-none"
+              >
+                <div class="flex items-center gap-2">
+                  <span onclick="event.stopPropagation()" class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-600 p-0.5 -ml-1 transition flex items-center shrink-0" title="คลิกค้างเพื่อลากจัดลำดับเครื่องมือ">
+                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+                  </span>
+                  <svg class="w-4 h-4 text-knw-orange stroke-current shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+                  </svg>
+                  <div class="flex items-center gap-1.5">
+                    <h3 class="text-xs font-semibold text-slate-800">กำหนดคลาสใบหน้า</h3>
+                    <span id="face-class-count" class="text-xs font-mono text-slate-400">(2 คลาส)</span>
+                  </div>
+                </div>
+
+                <!-- ข้อมูลสำคัญ + ปุ่มเพิ่มคลาส + ปุ่มพับ -->
+                <div class="flex items-center gap-3">
+                  <span id="model-engine-badge-face" class="text-xs font-mono text-slate-500 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>โมเดลพร้อม</span>
+                  </span>
+                  <button 
+                    onclick="event.stopPropagation(); addNewFaceClass();" 
+                    class="px-2.5 py-1 bg-knw-orange hover:bg-knw-orangeHover active:bg-orange-700 text-white rounded text-xs font-medium transition flex items-center gap-1 cursor-pointer select-none"
+                  >
+                    <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span>เพิ่มคลาส</span>
+                  </button>
+                  <svg id="card-face-classes-icon" class="w-3.5 h-3.5 text-slate-400 stroke-current transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- เนื้อหาภายในการ์ดคลาสใบหน้า -->
+              <div id="card-face-classes-body" class="p-4 space-y-3">
+                <!-- รายการคลาสใบหน้า (Face Classes List แบบ Flat Divider) -->
+                <div id="face-classes-container" class="space-y-3 max-h-[360px] overflow-y-auto pr-1 scroll-custom">
+                  <!-- Render โดย JavaScript -->
+                </div>
+
+                <!-- แถบด้านล่าง: บันทึกข้อมูล / กู้คืนชุดข้อมูล -->
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span id="face-storage-status" class="text-slate-400 text-xs font-mono">บันทึกอัตโนมัติ</span>
+                  <div class="flex items-center gap-2">
+                    <button 
+                      onclick="exportFaceDataset()" 
+                      class="text-xs font-medium text-slate-600 hover:text-knw-orange transition cursor-pointer px-1.5 py-0.5 rounded hover:bg-slate-50"
+                    >
+                      ส่งออก (Export)
+                    </button>
+                    <span class="text-slate-200">|</span>
+                    <label class="text-xs font-medium text-slate-600 hover:text-knw-orange transition cursor-pointer px-1.5 py-0.5 rounded hover:bg-slate-50">
+                      นำเข้า (Import)
+                      <input type="file" accept=".json" onchange="importFaceDataset(event)" class="hidden">
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ส่วนที่ 2: กล่องการทำงานของ MODE 2: MEDIAPIPE FINGER COUNTER -->
+          <div id="view-mode-hand" class="hidden flex flex-col gap-4" hidden>
+            
+            <!-- การ์ด 5: แสดงจำนวนนิ้วตัวใหญ่เด่นชัด (Big Finger Count Display) - Minimal Flat Style -->
+            <div id="card-hand-counter" class="bg-white rounded-md border border-slate-200 overflow-hidden text-center">
+              
+              <!-- Header การ์ดนับนิ้ว -->
+              <div 
+                onclick="toggleCardCollapse('card-hand-counter')" 
+                class="px-4 py-3 hover:bg-slate-50/60 transition cursor-pointer flex items-center justify-between border-b border-slate-100 select-none text-left"
+              >
+                <div class="flex items-center gap-2">
+                  <span onclick="event.stopPropagation()" class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-600 p-0.5 -ml-1 transition flex items-center shrink-0" title="คลิกค้างเพื่อลากจัดลำดับเครื่องมือ">
+                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+                  </span>
+                  <svg class="w-4 h-4 text-knw-orange stroke-current shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V4a1.5 1.5 0 013 0v4m0 0a1.5 1.5 0 013 0v3m0 0a1.5 1.5 0 013 0v4"/>
+                  </svg>
+                  <h3 class="text-xs font-semibold text-slate-800 leading-none">ตรวจจับนิ้วมือ (MediaPipe Hands)</h3>
+                </div>
+
+                <!-- ข้อมูลสำคัญ: สถานะโมเดล + ตัวเลขจำนวนนิ้วย่อ -->
+                <div class="flex items-center gap-3">
+                  <span id="model-engine-badge-hand" class="text-xs font-mono text-slate-500 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>โมเดลพร้อม</span>
+                  </span>
+                  <span class="text-slate-200">|</span>
+                  <span id="hand-count-summary-badge" class="text-xs font-mono text-slate-500 transition">
+                    ไม่พบมือ
+                  </span>
+                  <svg id="card-hand-counter-icon" class="w-3.5 h-3.5 text-slate-400 stroke-current transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- เนื้อหาภายในการ์ดตรวจจับนิ้วมือ -->
+              <div id="card-hand-counter-body" class="p-6">
+                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
+                  จำนวนนิ้วที่ตรวจพบ
+                </p>
+                
+                <div class="my-5 text-center">
+                  <div class="text-7xl font-mono font-bold text-slate-900 leading-none tracking-tight" id="hand-count-number">0</div>
+                  <div class="text-xs font-medium text-slate-500 mt-2" id="hand-status-text">ไม่พบมือ</div>
+                </div>
+
+                <p class="text-xs text-slate-400 pt-4 border-t border-slate-100 flex items-center justify-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-knw-orange shrink-0 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                  </svg>
+                  <span>ยกมือขึ้นหน้ากล้อง ระบบจะวาดจุดข้อต่อและส่งค่าตัวเลขเดี่ยว 0-5 เข้าบอร์ดทันที</span>
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ========================================================== -->
+        <!-- Tool 2: การ์ดตั้งค่าพารามิเตอร์การส่งข้อมูล (Threshold & Interval) -->
+        <!-- ========================================================== -->
+        <div id="tool-card-settings" class="draggable-tool-card transition-all duration-150">
+          <div id="card-settings" class="bg-white rounded-md border border-slate-200 overflow-hidden">
+            
+            <!-- Header การ์ดตั้งค่า -->
+            <div 
+              onclick="toggleCardCollapse('card-settings')" 
+              class="px-4 py-3 hover:bg-slate-50/60 transition cursor-pointer flex items-center justify-between border-b border-slate-100 select-none"
+            >
+              <div class="flex items-center gap-2">
+                <span onclick="event.stopPropagation()" class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-600 p-0.5 -ml-1 transition flex items-center shrink-0" title="คลิกค้างเพื่อลากจัดลำดับเครื่องมือ">
+                  <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+                </span>
+                <svg class="w-4 h-4 text-slate-500 stroke-current shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/>
+                </svg>
+                <h3 class="text-xs font-semibold text-slate-800 leading-none">ตั้งค่าการส่งข้อมูล (Parameters)</h3>
+              </div>
+
+              <!-- ข้อมูลสำคัญเมื่อการ์ดย่อพับ (ข้อความเรียบง่าย ไม่มี badge หนา) -->
+              <div class="flex items-center gap-3">
+                <span id="summary-threshold" class="text-xs font-mono font-medium text-knw-orange">
+                  Threshold: 75%
+                </span>
+                <span class="text-slate-200">|</span>
+                <span id="summary-interval" class="text-xs font-mono text-slate-500">
+                  400 ms
+                </span>
+                <svg id="card-settings-icon" class="w-3.5 h-3.5 text-slate-400 stroke-current transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- เนื้อหาภายในการ์ดตั้งค่า -->
+            <div id="card-settings-body" class="p-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                
+                <!-- Confidence Slider -->
+                <div>
+                  <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="text-slate-600 font-medium">เกณฑ์ความมั่นใจ (Threshold):</span>
+                    <span id="threshold-val" class="font-mono font-semibold text-knw-orange text-xs">
+                      75%
+                    </span>
+                  </div>
+                  <input 
+                    id="threshold-slider" 
+                    type="range" 
+                    min="40" 
+                    max="95" 
+                    value="75" 
+                    step="5"
+                    oninput="updateThresholdDisplay(this.value)"
+                    class="w-full h-1.5 bg-slate-200 rounded appearance-none cursor-pointer accent-knw-orange"
+                  />
+                </div>
+
+                <!-- Interval Slider -->
+                <div>
+                  <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="text-slate-600 font-medium">ความถี่ในการส่งข้อมูล:</span>
+                    <span id="interval-val" class="font-mono font-medium text-slate-700 text-xs">400 ms</span>
+                  </div>
+                  <input 
+                    id="interval-slider" 
+                    type="range" 
+                    min="100" 
+                    max="2000" 
+                    value="400" 
+                    step="50"
+                    oninput="updateIntervalDisplay(this.value)"
+                    class="w-full h-1.5 bg-slate-200 rounded appearance-none cursor-pointer accent-slate-600"
+                  />
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================== -->
+        <!-- Tool 3: ประวัติการส่งข้อมูล (Serial Logs)                     -->
+        <!-- ========================================================== -->
+        <div id="tool-card-serial" class="draggable-tool-card transition-all duration-150">
+          <div id="card-serial-logs" class="bg-white rounded-md border border-slate-200 overflow-hidden">
+            
+            <!-- Header การ์ด Serial Logs -->
+            <div 
+              onclick="toggleCardCollapse('card-serial-logs')" 
+              class="px-4 py-3 hover:bg-slate-50/60 transition cursor-pointer flex items-center justify-between border-b border-slate-100 select-none"
+            >
+              <div class="flex items-center gap-2">
+                <span onclick="event.stopPropagation()" class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-600 p-0.5 -ml-1 transition flex items-center shrink-0" title="คลิกค้างเพื่อลากจัดลำดับเครื่องมือ">
+                  <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+                </span>
+                <svg class="w-4 h-4 text-slate-500 stroke-current shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <h3 class="text-xs font-semibold text-slate-800 leading-none">ประวัติการส่งข้อมูล (Serial Logs)</h3>
+              </div>
+
+              <!-- ข้อมูลสำคัญ: สถานะหรือแพ็กเก็ตล่าสุด + ปุ่มล้าง + ปุ่มพับ -->
+              <div class="flex items-center gap-3">
+                <span id="serial-log-summary" class="text-xs text-slate-400 font-mono truncate max-w-[170px] transition">
+                  รอเชื่อมต่อ
+                </span>
+                <button 
+                  onclick="event.stopPropagation(); clearLog();" 
+                  class="text-xs text-slate-400 hover:text-rose-600 transition flex items-center gap-1 cursor-pointer select-none"
+                >
+                  <svg class="w-3 h-3 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                  <span>ล้าง</span>
+                </button>
+                <svg id="card-serial-logs-icon" class="w-3.5 h-3.5 text-slate-400 stroke-current transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- เนื้อหาภายในการ์ด Serial Logs (VS Code Integrated Terminal Style) -->
+            <div id="card-serial-logs-body" class="p-3">
+              <div 
+                id="log-box" 
+                class="h-44 bg-slate-950 text-slate-200 p-3 rounded font-mono text-xs overflow-y-auto space-y-1 scroll-custom"
+              >
+                <div class="text-slate-500 font-mono">// พร้อมรับส่งข้อมูลผ่าน Serial Port 115200 bps...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+  </div>
+
+  <!-- Modal ดูภาพตัวอย่างทั้งหมดของคลาส & ลบรายภาพ -->
+  <div 
+    id="modal-face-samples" 
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs select-none"
+    onclick="if(event.target === this) closeFaceSamplesModal()"
+  >
+    <div class="bg-white rounded-md border border-slate-200 shadow-xl max-w-xl w-full max-h-[85vh] flex flex-col overflow-hidden animate-fade-in">
+      
+      <!-- Modal Header -->
+      <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-knw-orange stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+          </svg>
+          <h3 class="text-xs font-semibold text-slate-800" id="modal-face-samples-title">ภาพตัวอย่างคลาส</h3>
+          <span id="modal-face-samples-count" class="text-xs font-mono text-slate-400">0 ภาพ</span>
+        </div>
+        <button 
+          onclick="closeFaceSamplesModal()" 
+          class="text-slate-400 hover:text-slate-700 p-1 rounded hover:bg-slate-100 transition cursor-pointer"
+          title="ปิดหน้าต่าง (Esc)"
+        >
+          <svg class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Body (Grid of images) -->
+      <div class="p-5 overflow-y-auto max-h-[60vh] scroll-custom">
+        <div id="modal-face-samples-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+          <!-- Rendered dynamically -->
+        </div>
+        <div id="modal-face-samples-empty" class="hidden text-center py-10 text-slate-400 text-xs">
+          ไม่มีภาพตัวอย่างในคลาสนี้
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between text-xs text-slate-500">
+        <span class="text-[11px] text-slate-400 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-knw-orange stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span>ชี้เมาส์ที่รูปภาพเพื่อแสดงเครื่องหมาย ✕ สำหรับลบภาพที่ไม่ต้องการ</span>
+        </span>
+        <button 
+          onclick="closeFaceSamplesModal()"
+          class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded font-medium transition cursor-pointer text-xs"
+        >
+          ปิด
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Hidden File Input สำหรับ Upload รูปภาพเข้าคลาส -->
+  <input type="file" id="class-file-uploader" multiple accept="image/*" class="hidden" onchange="handleClassFilesUploaded(event)">
+
+  <!-- Footer (KIDAI) -->
+  <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500">
+    <strong class="font-bold text-slate-800">KID<span class="text-knw-orange">AI</span></strong> | แพลตฟอร์มเพื่อการเรียนรู้ปัญญาประดิษฐ์และสะเต็มศึกษา (STEM Education) ร่วมกับ KidBright32
+  </footer>
+
+  <!-- Version Overlay จางๆ ที่มุมขวาล่าง -->
+  <div class="fixed bottom-2 right-3 z-40 pointer-events-none select-none font-mono text-[10px] md:text-xs text-slate-400/40 tracking-wider">
+    v2.0
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- JAVASCRIPT LOGIC: FACE ENGINE + MEDIAPIPE + WEB SERIAL         -->
+  <!-- ============================================================== -->
+  <script>
+    // -------------------------------------------------------------
+    // Global State & Model Instances
+    // -------------------------------------------------------------
+    let currentMode = "face"; // "face" | "hand"
+    let isCameraRunning = false;
+    let cameraFacing = "user"; // "user" | "environment"
+    let videoStream = null;
+
+    // Web Serial
+    let serialPort = null;
+    let serialReader = null;
+    let keepReading = false;
+    let readerClosedPromise = null;
+    let lastSendTime = 0;
+    const textEncoder = new TextEncoder();
+    const textDecoder = new TextDecoder();
+
+    // AI Model Instances (Named distinctly to avoid shadowing global libraries)
+    let net = null;             // MobileNet model instance
+    let classifier = null;      // KNN Classifier instance
+    let faceDetector = null;    // BlazeFace detector instance
+    let handsDetector = null;   // MediaPipe Hands instance
+
+    // Smooth Face Tracking & Prediction State
+    let activeFaceBox = null;   // กรอบใบหน้าล่าสุดสำหรับวาด overlay 60 FPS
+    let isAiPredicting = false; // ป้องกันการเรียก AI ซ้อนทับกัน
+
+    // Face Dataset state
+    let faceClasses = [
+      { id: "class_0", name: "คนรู้จัก_1", samples: [] },
+      { id: "class_1", name: "คนรู้จัก_2", samples: [] },
+      { id: "class_2", name: "ไม่มีคน", samples: [] }
+    ];
+    let activeUploadClassId = null;
+    let isHoldingCapture = false;
+    let holdCaptureTimer = null;
+    let currentHoldClassId = null;
+
+    // Hand detection state
+    let currentFingerCount = 0;
+    let currentHandData = { thumb: false, index: false, middle: false, ring: false, pinky: false };
+
+    // -------------------------------------------------------------
+    // Initializer with Auto-Page Restoration & Card State
+    // -------------------------------------------------------------
+    window.addEventListener("DOMContentLoaded", async () => {
+      // 1. กู้คืนหน้าและโหมดล่าสุดที่ผู้ใช้เปิดไว้ก่อนหน้านี้
+      const savedPage = localStorage.getItem(STORAGE_KEY_CURRENT_PAGE) || "welcome";
+      const savedMode = localStorage.getItem(STORAGE_KEY_CURRENT_MODE) || "face";
+      navigateTo(savedPage, savedMode);
+
+      initDraggableTools();
+      restoreCardCollapseStates();
+      updateThresholdDisplay(document.getElementById("threshold-slider").value);
+      updateIntervalDisplay(document.getElementById("interval-slider").value);
+
+      loadSavedFaceDataset();
+      renderFaceClasses();
+      checkSavedSerialPort();
+      await initAIModels();
+    });
+
+    async function initAIModels() {
+      const badgeFace = document.getElementById("model-engine-badge-face");
+      const badgeHand = document.getElementById("model-engine-badge-hand");
+
+      const setLoading = () => {
+        const html = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span><span>กำลังโหลดโมเดล...</span>';
+        if (badgeFace) {
+          badgeFace.innerHTML = html;
+          badgeFace.className = "text-xs font-mono text-amber-600 flex items-center gap-1.5";
+        }
+        if (badgeHand) {
+          badgeHand.innerHTML = html;
+          badgeHand.className = "text-xs font-mono text-amber-600 flex items-center gap-1.5";
+        }
+      };
+
+      const setReady = () => {
+        const html = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span>โมเดลพร้อม</span>';
+        if (badgeFace) {
+          badgeFace.innerHTML = html;
+          badgeFace.className = "text-xs font-mono text-slate-500 flex items-center gap-1.5";
+        }
+        if (badgeHand) {
+          badgeHand.innerHTML = html;
+          badgeHand.className = "text-xs font-mono text-slate-500 flex items-center gap-1.5";
+        }
+      };
+
+      setLoading();
+
+      try {
+        // 1. MobileNet & KNN & BlazeFace
+        net = await mobilenet.load({ version: 2, alpha: 0.50 });
+        classifier = knnClassifier.create();
+        faceDetector = await blazeface.load();
+
+        // 2. MediaPipe Hands
+        handsDetector = new Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+        handsDetector.setOptions({
+          maxNumHands: 2,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5
+        });
+        handsDetector.onResults(onHandResults);
+
+        // Train saved samples if any exist in storage
+        await retrainKNNFromSamples();
+
+        setReady();
+        appendLog("[SYS] โหลดโมเดล MobileNet, BlazeFace และ MediaPipe Hands เรียบร้อย");
+      } catch (err) {
+        console.error("AI Init Error:", err);
+        const errHtml = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span><span>โหลดโมเดลล้มเหลว</span>';
+        if (badgeFace) badgeFace.innerHTML = errHtml;
+        if (badgeHand) badgeHand.innerHTML = errHtml;
+        appendLog("[SYS] เกิดข้อผิดพลาดในการโหลดโมเดล AI: " + err.message);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Page Navigation & State Persistence (Welcome vs Studio)
+    // -------------------------------------------------------------
+    const STORAGE_KEY_CURRENT_PAGE = "simple_ai_last_active_page";
+    const STORAGE_KEY_CURRENT_MODE = "simple_ai_last_active_mode";
+    let activePage = "welcome";
+
+    function navigateTo(targetPage, targetMode = null) {
+      activePage = targetPage;
+      const header = document.getElementById("main-header");
+      const welcomeView = document.getElementById("view-page-welcome");
+      const studioView = document.getElementById("view-page-studio");
+
+      // บันทึกหน้าล่าสุดลง LocalStorage เพื่อให้รีเฟรชแล้วค้างอยู่ที่เดิม
+      try {
+        localStorage.setItem(STORAGE_KEY_CURRENT_PAGE, targetPage);
+      } catch (e) {}
+
+      if (targetPage === "welcome") {
+        // ข้อ 1: ในหน้าแรก มีแค่การแนะนำ Tools Bar ด้านบนไม่ต้องมี
+        if (header) header.classList.add("hidden");
+        if (welcomeView) welcomeView.classList.remove("hidden");
+        if (studioView) studioView.classList.add("hidden");
+      } else {
+        // ในหน้าสตูดิโอ: แสดง Tools Bar ด้านบน
+        if (header) header.classList.remove("hidden");
+        if (welcomeView) welcomeView.classList.add("hidden");
+        if (studioView) studioView.classList.remove("hidden");
+
+        if (targetMode) {
+          switchMode(targetMode);
+        } else {
+          const savedMode = localStorage.getItem(STORAGE_KEY_CURRENT_MODE) || currentMode || "face";
+          switchMode(savedMode);
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Mode Switching Logic
+    // -------------------------------------------------------------
+    function switchMode(mode) {
+      currentMode = mode;
+      try {
+        localStorage.setItem(STORAGE_KEY_CURRENT_MODE, mode);
+      } catch (e) {}
+
+      const tabFace = document.getElementById("tab-btn-face");
+      const tabHand = document.getElementById("tab-btn-hand");
+      const viewFace = document.getElementById("view-mode-face");
+      const viewHand = document.getElementById("view-mode-hand");
+      const toolSettings = document.getElementById("tool-card-settings");
+
+      if (mode === "face") {
+        if (tabFace) tabFace.className = "flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition bg-slate-100 text-knw-orange cursor-pointer";
+        if (tabHand) tabHand.className = "flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition text-slate-600 hover:text-slate-900 hover:bg-slate-50 cursor-pointer";
+        if (viewFace) {
+          viewFace.classList.remove("hidden");
+          viewFace.removeAttribute("hidden");
+        }
+        if (viewHand) {
+          viewHand.classList.add("hidden");
+          viewHand.setAttribute("hidden", "");
+        }
+        // ในโหมดตรวจจับใบหน้า แสดงการ์ดตั้งค่าพารามิเตอร์ (Threshold & Interval)
+        if (toolSettings) {
+          toolSettings.classList.remove("hidden");
+          toolSettings.removeAttribute("hidden");
+        }
+      } else {
+        if (tabHand) tabHand.className = "flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition bg-slate-100 text-knw-orange cursor-pointer";
+        if (tabFace) tabFace.className = "flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition text-slate-600 hover:text-slate-900 hover:bg-slate-50 cursor-pointer";
+        if (viewHand) {
+          viewHand.classList.remove("hidden");
+          viewHand.removeAttribute("hidden");
+        }
+        if (viewFace) {
+          viewFace.classList.add("hidden");
+          viewFace.setAttribute("hidden", "");
+        }
+        // ในโหมดนับจำนวนนิ้ว ซ่อนการ์ดตั้งค่าพารามิเตอร์เพื่อลดความซ้ำซ้อน
+        if (toolSettings) {
+          toolSettings.classList.add("hidden");
+          toolSettings.setAttribute("hidden", "");
+        }
+      }
+
+      appendLog(`[SYS] สลับโหมดการทำงานเป็น: ${mode === 'face' ? 'โมเดลจดจำใบหน้า' : 'โมเดลนับนิ้วมือ MediaPipe'}`);
+    }
+
+    // -------------------------------------------------------------
+    // Card Collapse & Expand Logic (พร้อมบันทึกสถานะลง localStorage)
+    // -------------------------------------------------------------
+    function toggleCardCollapse(cardId) {
+      const body = document.getElementById(cardId + "-body");
+      const icon = document.getElementById(cardId + "-icon");
+      if (!body) return;
+
+      const isCollapsed = body.classList.contains("hidden");
+      if (isCollapsed) {
+        body.classList.remove("hidden");
+        if (icon) icon.classList.remove("rotate-180");
+        try { localStorage.setItem("collapse_" + cardId, "0"); } catch (e) {}
+      } else {
+        body.classList.add("hidden");
+        if (icon) icon.classList.add("rotate-180");
+        try { localStorage.setItem("collapse_" + cardId, "1"); } catch (e) {}
+      }
+    }
+
+    function restoreCardCollapseStates() {
+      // preview และผลทำนายไม่มีย่อพับ (ล้างค่าที่อาจเคยบันทึกไว้)
+      try { 
+        localStorage.removeItem("collapse_card-camera");
+        localStorage.removeItem("collapse_card-face-pred");
+      } catch (e) {}
+
+      const cardIds = [
+        "card-settings",
+        "card-face-classes",
+        "card-hand-counter",
+        "card-serial-logs"
+      ];
+      cardIds.forEach(id => {
+        try {
+          const isCollapsed = localStorage.getItem("collapse_" + id) === "1";
+          const body = document.getElementById(id + "-body");
+          const icon = document.getElementById(id + "-icon");
+          if (body && isCollapsed) {
+            body.classList.add("hidden");
+            if (icon) icon.classList.add("rotate-180");
+          }
+        } catch (e) {}
+      });
+    }
+
+    // -------------------------------------------------------------
+    // Draggable & Reorderable Tools on Right Column
+    // -------------------------------------------------------------
+    const STORAGE_KEY_TOOLS_ORDER = "simple_ai_tools_order";
+
+    function initDraggableTools() {
+      const container = document.getElementById("right-column-tools");
+      if (!container) return;
+
+      restoreToolsOrder();
+
+      const cards = container.querySelectorAll(".draggable-tool-card");
+      let draggedCard = null;
+
+      cards.forEach(card => {
+        card.setAttribute("draggable", "true");
+
+        card.addEventListener("dragstart", (e) => {
+          // ถ้าผู้ใช้คลิกโดนปุ่ม, อินพุต, สไลเดอร์, หรือเนื้อหาภายในคลาส ให้ไม่เริ่ม drag
+          if (e.target.closest("input, button, label, select, textarea, .scroll-custom, #face-classes-container, #log-box")) {
+            e.preventDefault();
+            return;
+          }
+
+          draggedCard = card;
+          card.classList.add("opacity-40", "scale-[0.99]", "shadow-lg");
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", card.id);
+        });
+
+        card.addEventListener("dragend", () => {
+          if (draggedCard) {
+            draggedCard.classList.remove("opacity-40", "scale-[0.99]", "shadow-lg");
+            draggedCard = null;
+          }
+          saveToolsOrder();
+        });
+
+        card.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          if (!draggedCard || draggedCard === card) return;
+
+          const rect = card.getBoundingClientRect();
+          const midY = rect.top + rect.height / 2;
+          if (e.clientY < midY) {
+            container.insertBefore(draggedCard, card);
+          } else {
+            container.insertBefore(draggedCard, card.nextSibling);
+          }
+        });
+      });
+    }
+
+    function saveToolsOrder() {
+      const container = document.getElementById("right-column-tools");
+      if (!container) return;
+      const cards = Array.from(container.children).filter(el => el.classList.contains("draggable-tool-card"));
+      const ids = cards.map(el => el.id);
+      try {
+        localStorage.setItem(STORAGE_KEY_TOOLS_ORDER, JSON.stringify(ids));
+      } catch (e) {}
+    }
+
+    function restoreToolsOrder() {
+      const container = document.getElementById("right-column-tools");
+      if (!container) return;
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_TOOLS_ORDER);
+        if (!saved) return;
+        const ids = JSON.parse(saved);
+        if (Array.isArray(ids)) {
+          ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && el.parentElement === container) {
+              container.appendChild(el);
+            }
+          });
+        }
+      } catch (e) {}
+    }
+
+    function updateThresholdDisplay(val) {
+      const tVal = document.getElementById("threshold-val");
+      const tSum = document.getElementById("summary-threshold");
+      if (tVal) tVal.innerText = val + "%";
+      if (tSum) tSum.innerText = "Threshold: " + val + "%";
+    }
+
+    function updateIntervalDisplay(val) {
+      const iVal = document.getElementById("interval-val");
+      const iSum = document.getElementById("summary-interval");
+      if (iVal) iVal.innerText = val + " ms";
+      if (iSum) iSum.innerText = val + " ms";
+    }
+
+    // -------------------------------------------------------------
+    // Camera Control & Processing Pipeline
+    // -------------------------------------------------------------
+    async function toggleCamera() {
+      if (isCameraRunning) {
+        await stopCamera();
+      } else {
+        await startCamera();
+      }
+    }
+
+    async function startCamera() {
+      const btn = document.getElementById("btn-toggle-cam");
+      const btnText = document.getElementById("btn-toggle-cam-text");
+      const icon = document.getElementById("icon-cam-play");
+      const placeholder = document.getElementById("cam-placeholder");
+      const liveBadge = document.getElementById("cam-live-indicator");
+      const overlayBanner = document.getElementById("canvas-overlay-banner");
+      const video = document.getElementById("webcam-video");
+
+      btnText.innerText = "กำลังเปิดกล้อง...";
+
+      try {
+        const constraints = {
+          video: {
+            facingMode: cameraFacing,
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          },
+          audio: false
+        };
+
+        videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = videoStream;
+
+        await new Promise((resolve) => {
+          video.onloadedmetadata = () => {
+            video.play();
+            resolve();
+          };
+        });
+
+        const canvas = document.getElementById("output-canvas");
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+
+        placeholder.style.display = "none";
+        liveBadge.classList.remove("hidden");
+        overlayBanner.classList.remove("hidden");
+
+        btnText.innerText = "หยุดการทำงานของกล้อง";
+        btn.className = "flex-1 py-2 px-3 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded text-xs font-medium transition flex items-center justify-center gap-1.5 cursor-pointer select-none";
+        icon.innerHTML = '<rect x="6" y="6" width="12" height="12"/>';
+
+        isCameraRunning = true;
+        requestAnimationFrame(renderLoop);
+      } catch (err) {
+        console.error("Camera Error:", err);
+        alert("ไม่สามารถเปิดกล้องได้: โปรดตรวจสอบสิทธิ์การใช้งานกล้องในเบราว์เซอร์");
+        btnText.innerText = "เปิดกล้องทำงาน";
+      }
+    }
+
+    async function stopCamera() {
+      const btn = document.getElementById("btn-toggle-cam");
+      const btnText = document.getElementById("btn-toggle-cam-text");
+      const icon = document.getElementById("icon-cam-play");
+      const placeholder = document.getElementById("cam-placeholder");
+      const liveBadge = document.getElementById("cam-live-indicator");
+      const overlayBanner = document.getElementById("canvas-overlay-banner");
+      const video = document.getElementById("webcam-video");
+      const canvas = document.getElementById("output-canvas");
+
+      isCameraRunning = false;
+
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+      }
+      if (video) video.srcObject = null;
+
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      placeholder.style.display = "block";
+      liveBadge.classList.add("hidden");
+      overlayBanner.classList.add("hidden");
+
+      btnText.innerText = "เปิดกล้องทำงาน";
+      btn.className = "flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded text-xs font-medium transition flex items-center justify-center gap-1.5 cursor-pointer select-none";
+      icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+
+      const summaryHand = document.getElementById("hand-count-summary-badge");
+      if (summaryHand) {
+        summaryHand.innerText = "รอเปิดกล้อง";
+        summaryHand.className = "text-xs font-mono text-slate-400 transition";
+      }
+
+      document.getElementById("canvas-overlay-label").innerText = "-";
+      document.getElementById("canvas-overlay-sub").innerText = "-";
+    }
+
+    function switchCameraFacing() {
+      cameraFacing = cameraFacing === "user" ? "environment" : "user";
+      if (isCameraRunning) {
+        stopCamera().then(() => startCamera());
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Fullscreen Controls for Camera Preview (Both Models)
+    // -------------------------------------------------------------
+    function toggleFullscreen() {
+      const container = document.querySelector(".video-canvas-container");
+      if (!container) return;
+
+      const isFs = document.fullscreenElement || document.webkitFullscreenElement;
+      if (!isFs) {
+        if (container.requestFullscreen) {
+          container.requestFullscreen().catch(err => console.warn(err));
+        } else if (container.webkitRequestFullscreen) {
+          container.webkitRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(err => console.warn(err));
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    }
+
+    // ติดตามสถานะ Fullscreen เพื่อสลับ Icon ขยาย/ย่อ
+    function onFullscreenChange() {
+      const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      const iconMax = document.getElementById("icon-fs-maximize");
+      const iconMin = document.getElementById("icon-fs-minimize");
+
+      if (iconMax && iconMin) {
+        if (isFs) {
+          iconMax.classList.add("hidden");
+          iconMin.classList.remove("hidden");
+        } else {
+          iconMax.classList.remove("hidden");
+          iconMin.classList.add("hidden");
+        }
+      }
+    }
+
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", onFullscreenChange);
+
+    // -------------------------------------------------------------
+    // Main Rendering Loop (60 FPS Unblocked Video)
+    // -------------------------------------------------------------
+    function renderLoop() {
+      if (!isCameraRunning) return;
+
+      const video = document.getElementById("webcam-video");
+      const canvas = document.getElementById("output-canvas");
+      const ctx = canvas.getContext("2d");
+
+      if (video.readyState === 4) {
+        if (currentMode === "face") {
+          // 1. วาดวิดีโอแบบสด 60 FPS ลื่น 100%
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          // 2. วาดกรอบส้มบนใบหน้าถ้าตรวจพบ
+          if (activeFaceBox) {
+            ctx.strokeStyle = "#EA580C";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(activeFaceBox.x, activeFaceBox.y, activeFaceBox.width, activeFaceBox.height);
+            drawCornerAccents(ctx, activeFaceBox.x, activeFaceBox.y, activeFaceBox.width, activeFaceBox.height, "#EA580C");
+          }
+
+          // 3. ทริกเกอร์ AI ประมวลผลแบบอะซิงโครนัส (ไม่ดึง FPS ของวิดีโอ)
+          if (!isAiPredicting) {
+            isAiPredicting = true;
+            processFaceRecognitionAsync(video, canvas).finally(() => {
+              isAiPredicting = false;
+            });
+          }
+        } else if (currentMode === "hand") {
+          // โหมด MediaPipe Hands
+          if (!isAiPredicting) {
+            isAiPredicting = true;
+            processHandPoseFrame(video, canvas, ctx).finally(() => {
+              isAiPredicting = false;
+            });
+          }
+        }
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    // -------------------------------------------------------------
+    // 1. Fast Asynchronous Face Recognition Pipeline
+    // -------------------------------------------------------------
+    async function processFaceRecognitionAsync(video, canvas) {
+      // 1. ตรวจจับตำแหน่งใบหน้าด้วย BlazeFace
+      let currentBox = null;
+      if (faceDetector) {
+        const predictions = await faceDetector.estimateFaces(video, false);
+        if (predictions && predictions.length > 0) {
+          const pred = predictions[0];
+          const start = pred.topLeft;
+          const end = pred.bottomRight;
+          const w = end[0] - start[0];
+          const h = end[1] - start[1];
+
+          currentBox = {
+            x: Math.max(0, start[0]),
+            y: Math.max(0, start[1]),
+            width: Math.min(canvas.width - start[0], w),
+            height: Math.min(canvas.height - start[1], h)
+          };
+        }
+      }
+
+      // อัปเดตตำแหน่ง activeFaceBox ให้ renderLoop วาดทันที
+      activeFaceBox = currentBox;
+
+      const overlayLabel = document.getElementById("canvas-overlay-label");
+      const overlaySub = document.getElementById("canvas-overlay-sub");
+      const thresholdSlider = document.getElementById("threshold-slider");
+      const threshold = thresholdSlider ? parseInt(thresholdSlider.value) / 100 : 0.75;
+      const intervalSlider = document.getElementById("interval-slider");
+      const intervalMs = intervalSlider ? parseInt(intervalSlider.value) : 400;
+      const hasExamples = classifier && classifier.getNumClasses() > 0;
+
+      // กรณีที่ 1: ตรวจไม่พบใบหน้าเลย (เช่น เอากระดาษบังหน้า หรือไม่มีคน)
+      if (!activeFaceBox) {
+        overlayLabel.innerText = "ไม่พบใบหน้า (หรือถูกบดบัง)";
+        overlaySub.innerText = "กรุณาเปิดหน้าให้กล้องมองเห็นชัดเจน";
+        return;
+      }
+
+      // กรณีที่ 2: พบใบหน้า แต่ยังไม่มีข้อมูลเทรนในคลาสใดๆ
+      if (!hasExamples) {
+        overlayLabel.innerText = "พบใบหน้า (ยังไม่ได้เทรน)";
+        overlaySub.innerText = "โปรดกดถ่ายภาพหรืออัปโหลดรูปในคลาสด้านขวา";
+        return;
+      }
+
+      // กรณีที่ 3: พบใบหน้า และมีคลาสตัวอย่าง -> Crop เฉพาะใบหน้าไปสกัด Feature
+      const faceTensor = tf.tidy(() => {
+        const inputImg = tf.browser.fromPixels(video);
+        const padX = activeFaceBox.width * 0.12;
+        const padY = activeFaceBox.height * 0.12;
+        const y1 = Math.max(0, (activeFaceBox.y - padY)) / canvas.height;
+        const x1 = Math.max(0, (activeFaceBox.x - padX)) / canvas.width;
+        const y2 = Math.min(canvas.height, (activeFaceBox.y + activeFaceBox.height + padY)) / canvas.height;
+        const x2 = Math.min(canvas.width, (activeFaceBox.x + activeFaceBox.width + padX)) / canvas.width;
+
+        const boxes = [[y1, x1, y2, x2]];
+        const cropped = tf.image.cropAndResize(inputImg.expandDims(0), boxes, [0], [224, 224]);
+        return cropped.squeeze(0);
+      });
+
+      // สกัด Feature Embedding ของใบหน้า
+      const embedding = net.infer(faceTensor, true);
+      faceTensor.dispose();
+
+      // คำนวณความคล้ายคลึง (Cosine Similarity) กับตัวอย่างของแต่ละคลาสจริง
+      // เพื่อป้องกันไม่ให้โมเดลเดามั่วกับบุคคลที่ไม่ได้เทรนไว้ (Unknown Person / Stranger)
+      const dataset = classifier.getClassifierDataset();
+      let bestSim = 0;
+      let bestClassId = null;
+
+      // ทำ L2-Normalize เวกเตอร์ปัจจุบัน
+      const normEmbedding = tf.tidy(() => tf.div(embedding, tf.norm(embedding)));
+      const normEmbData = await normEmbedding.data();
+      normEmbedding.dispose();
+
+      // ตรวจสอบความคล้ายคลึงกับตัวอย่างของแต่ละคลาส
+      for (const [clsId, tensor] of Object.entries(dataset)) {
+        if (!tensor || tensor.shape[0] === 0) continue;
+
+        // คำนวณ Dot Product (Cosine Similarity) ระหว่างใบหน้าปัจจุบันกับตัวอย่างในคลาสนั้น
+        const simTensor = tf.tidy(() => {
+          const normDataset = tf.div(tensor, tf.norm(tensor, 'euclidean', 1, true));
+          const dots = tf.matMul(normDataset, tf.tensor2d(normEmbData, [normEmbData.length, 1]));
+          return tf.max(dots); // ค่าความคล้ายคลึงสูงสุดกับตัวอย่างในคลาสนี้
+        });
+
+        const maxSim = (await simTensor.data())[0];
+        simTensor.dispose();
+
+        // แปลง Cosine Similarity (ปกติช่วง 0.4 - 0.95) ให้อยู่ในสเกล 0 - 100%
+        // หากต่ำกว่า 0.55 แสดงว่าเป็นคนละคนกันอย่างสิ้นเชิง
+        const normalizedProb = Math.max(0, Math.min(1, (maxSim - 0.45) / 0.45));
+
+        if (normalizedProb > bestSim) {
+          bestSim = normalizedProb;
+          bestClassId = clsId;
+        }
+      }
+      embedding.dispose();
+
+      const targetClass = faceClasses.find(c => c.id === bestClassId);
+      const className = targetClass ? targetClass.name : bestClassId;
+      const percent = Math.round(bestSim * 100);
+
+      // ตรวจสอบเงื่อนไขการระบุตัวตน (แสดงบนหน้าจอ Preview ของกล้องโดยตรง)
+      // 1. ถ้ามีความคล้ายคลึงถึงเกณฑ์ (Threshold) -> เป็นคนที่เทรนไว้
+      if (bestClassId && bestSim >= threshold) {
+        overlayLabel.innerText = className;
+        overlaySub.innerText = `ความมั่นใจ: ${percent}% (ตรงกับ ${className})`;
+
+        // ส่ง Serial เข้า KidBright
+        const now = Date.now();
+        if (now - lastSendTime >= intervalMs) {
+          await sendToSerial(className);
+          lastSendTime = now;
+        }
+      } 
+      // 2. ถ้ามีใบหน้าชัดเจน แต่ความคล้ายคลึงต่ำกว่าเกณฑ์ -> คนแปลกหน้า / ยังไม่ได้ลงทะเบียน
+      else {
+        overlayLabel.innerText = "คนแปลกหน้า (ไม่ได้ลงทะเบียน)";
+        overlaySub.innerText = `คล้ายสุด: ${className} เพียง ${percent}% (ต่ำกว่าเกณฑ์ ${Math.round(threshold * 100)}%)`;
+
+        // ส่ง Serial ว่า UNKNOWN เข้า KidBright (หากเกิน interval)
+        const now = Date.now();
+        if (now - lastSendTime >= intervalMs) {
+          await sendToSerial("UNKNOWN");
+          lastSendTime = now;
+        }
+      }
+    }
+
+    function drawCornerAccents(ctx, x, y, w, h, color) {
+      const len = Math.min(20, w * 0.2, h * 0.2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
+      // Top-Left
+      ctx.beginPath();
+      ctx.moveTo(x, y + len); ctx.lineTo(x, y); ctx.lineTo(x + len, y);
+      ctx.stroke();
+      // Top-Right
+      ctx.beginPath();
+      ctx.moveTo(x + w - len, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + len);
+      ctx.stroke();
+      // Bottom-Left
+      ctx.beginPath();
+      ctx.moveTo(x, y + h - len); ctx.lineTo(x, y + h); ctx.lineTo(x + len, y + h);
+      ctx.stroke();
+      // Bottom-Right
+      ctx.beginPath();
+      ctx.moveTo(x + w - len, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - len);
+      ctx.stroke();
+    }
+
+    // -------------------------------------------------------------
+    // 2. MediaPipe Hand Pose & Finger Counting Pipeline
+    // -------------------------------------------------------------
+    async function processHandPoseFrame(video, canvas, ctx) {
+      if (handsDetector) {
+        await handsDetector.send({ image: video });
+      }
+    }
+
+    function onHandResults(results) {
+      if (currentMode !== "hand" || !isCameraRunning) return;
+
+      const canvas = document.getElementById("output-canvas");
+      const ctx = canvas.getContext("2d");
+
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+      let totalFingers = 0;
+      let handDetected = false;
+      let handData = { thumb: false, index: false, middle: false, ring: false, pinky: false };
+
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        handDetected = true;
+
+        for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+          const landmarks = results.multiHandLandmarks[i];
+          const handedness = (results.multiHandedness && results.multiHandedness[i]) 
+            ? results.multiHandedness[i].label 
+            : "Right";
+
+          // วาด Hand Skeleton สวยงาม
+          drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: '#EA580C', lineWidth: 4 });
+          drawLandmarks(ctx, landmarks, { color: '#ffffff', fillColor: '#0F172A', lineWidth: 2, radius: 4 });
+
+          // คำนวณนิ้วที่ชู
+          const fingers = countFingersForHand(landmarks, handedness);
+          totalFingers += fingers.count;
+
+          // เก็บสถานะนิ้วของมือแรกเป็นหลักสำหรับแสดงไฟ Indicator
+          if (i === 0) {
+            handData = fingers.states;
+          }
+        }
+      }
+
+      ctx.restore();
+
+      // อัปเดต UI และส่ง Serial
+      updateHandUI(handDetected, totalFingers, handData);
+    }
+
+    function countFingersForHand(lm, handedness) {
+      let states = {
+        thumb: false,
+        index: false,
+        middle: false,
+        ring: false,
+        pinky: false
+      };
+
+      // ในระบบพิกัด MediaPipe:
+      // Y ชี้ลง (0 อยู่บน, 1 อยู่ล่าง) ดังนั้น ถ้าชูนิ้ว ปลายข้อนิ้ว (TIP) จะมี Y น้อยกว่าข้อนิ้วกลาง (PIP)
+      // นิ้วชี้ (Index): tip 8, pip 6
+      states.index = lm[8].y < lm[6].y;
+
+      // นิ้วกลาง (Middle): tip 12, pip 10
+      states.middle = lm[12].y < lm[10].y;
+
+      // นิ้วนาง (Ring): tip 16, pip 14
+      states.ring = lm[16].y < lm[14].y;
+
+      // นิ้วก้อย (Pinky): tip 20, pip 18
+      states.pinky = lm[20].y < lm[18].y;
+
+      // นิ้วโป้ง (Thumb): tip 4, ip 3, mcp 2
+      // คำนวณระยะห่างเพื่อตรวจจับทั้งกรณีกางนิ้วโป้งออกด้านข้าง (open hand) และชูขึ้นบน (thumbs up)
+      const dTipPinky = Math.hypot(lm[4].x - lm[17].x, lm[4].y - lm[17].y);
+      const dIpPinky = Math.hypot(lm[3].x - lm[17].x, lm[3].y - lm[17].y);
+
+      const dTipIndex = Math.hypot(lm[4].x - lm[5].x, lm[4].y - lm[5].y);
+      const dIpIndex = Math.hypot(lm[3].x - lm[5].x, lm[3].y - lm[5].y);
+
+      const dTipWrist = Math.hypot(lm[4].x - lm[0].x, lm[4].y - lm[0].y);
+      const dMcpWrist = Math.hypot(lm[2].x - lm[0].x, lm[2].y - lm[0].y);
+
+      // เงื่อนไข 1: กางนิ้วโป้งออกด้านข้าง (open hand หรือท่า L) โดยใช้ ratio 1.03 ที่ยืดหยุ่นเป็นธรรมชาติ
+      const isSpreadOut = (dTipPinky > dIpPinky * 1.03) && (dTipWrist > dMcpWrist * 1.15);
+
+      // เงื่อนไข 2: ชูนิ้วโป้งขึ้นบน (Thumbs Up) โดยปลายนิ้วต้องอยู่สูงกว่าข้อนิ้วและโคนนิ้วชี้
+      const isThumbsUp = (lm[4].y < lm[3].y) && (lm[3].y < lm[2].y) && (lm[4].y < lm[5].y);
+
+      // เงื่อนไข 3: กางแยกห่างออกจากโคนนิ้วชี้
+      const isExtendedFromIndex = (dTipIndex > dIpIndex * 1.06) && (dTipWrist > dMcpWrist * 1.15);
+
+      states.thumb = isSpreadOut || isThumbsUp || isExtendedFromIndex;
+
+      let count = 0;
+      if (states.thumb) count++;
+      if (states.index) count++;
+      if (states.middle) count++;
+      if (states.ring) count++;
+      if (states.pinky) count++;
+
+      return { count, states };
+    }
+
+    async function updateHandUI(handDetected, count) {
+      const numberEl = document.getElementById("hand-count-number");
+      const statusEl = document.getElementById("hand-status-text");
+      const overlayLabel = document.getElementById("canvas-overlay-label");
+      const overlaySub = document.getElementById("canvas-overlay-sub");
+      const summaryHand = document.getElementById("hand-count-summary-badge");
+
+      if (handDetected) {
+        numberEl.innerText = count;
+        statusEl.innerText = `ชู ${count} นิ้ว`;
+        overlayLabel.innerText = `${count} นิ้ว`;
+        overlaySub.innerText = "ตรวจจับมือ MediaPipe สำเร็จ";
+
+        if (summaryHand) {
+          summaryHand.innerText = `ชู ${count} นิ้ว`;
+          summaryHand.className = "text-xs font-mono font-medium text-knw-orange transition";
+        }
+      } else {
+        numberEl.innerText = "0";
+        statusEl.innerText = "ไม่พบมือ";
+        overlayLabel.innerText = "ไม่พบมือ";
+        overlaySub.innerText = "กรุณายกมือหน้ากล้อง";
+
+        if (summaryHand) {
+          summaryHand.innerText = "ไม่พบมือ";
+          summaryHand.className = "text-xs font-mono text-slate-500 transition";
+        }
+      }
+
+      // ส่ง Serial หากมีมือและครบช่วงเวลา (ส่งเฉพาะตัวเลขล้วน เช่น "0", "1", ..., "5")
+      if (handDetected) {
+        const intervalSlider = document.getElementById("interval-slider");
+        const intervalMs = intervalSlider ? parseInt(intervalSlider.value) : 400;
+        const sendPayload = String(count);
+
+        const now = Date.now();
+        if (now - lastSendTime >= intervalMs) {
+          await sendToSerial(sendPayload);
+          lastSendTime = now;
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 3. Face Dataset UI & Management (Add/Record/Upload/Train)
+    // -------------------------------------------------------------
+    function renderFaceClasses() {
+      const container = document.getElementById("face-classes-container");
+      const countEl = document.getElementById("face-class-count");
+      countEl.innerText = `(${faceClasses.length} คลาส)`;
+      container.innerHTML = "";
+
+      faceClasses.forEach((cls, idx) => {
+        const sampleCount = cls.samples ? cls.samples.length : 0;
+        const row = document.createElement("div");
+        row.className = "py-3 first:pt-0 last:pb-0 border-b border-slate-100 last:border-b-0 space-y-2.5";
+        row.id = `class-card-${cls.id}`;
+
+        row.innerHTML = `
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+              <span class="text-xs font-mono font-medium text-slate-400 select-none">${idx + 1}.</span>
+              <input 
+                type="text" 
+                value="${escapeHtml(cls.name)}" 
+                onchange="renameFaceClass('${cls.id}', this.value)"
+                class="px-2.5 py-1 bg-white hover:border-slate-300 focus:border-knw-orange border border-slate-200 rounded text-xs font-medium text-slate-800 focus:outline-none transition w-full"
+                title="คลิกเพื่อแก้ไขชื่อคลาส"
+              />
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+              <span id="class-badge-${cls.id}" class="text-xs font-mono text-slate-500">
+                ${sampleCount} ภาพ
+              </span>
+              <button 
+                onclick="deleteFaceClass('${cls.id}')" 
+                title="ลบคลาสนี้"
+                class="text-slate-400 hover:text-rose-600 p-1 transition cursor-pointer select-none"
+              >
+                <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Action Buttons: Flat Minimal (ถ่ายภาพ & อัปโหลด) -->
+          <div class="flex items-center gap-2 pt-0.5">
+            <!-- ปุ่ม ถ่ายภาพจากกล้อง (Primary Action เด่นชัด) -->
+            <button 
+              id="btn-hold-${cls.id}"
+              onmousedown="startHoldCapture('${cls.id}')"
+              onmouseup="stopHoldCapture()"
+              onmouseleave="stopHoldCapture()"
+              ontouchstart="startHoldCapture('${cls.id}')"
+              ontouchend="stopHoldCapture()"
+              class="flex-1 py-1.5 px-3 bg-knw-orange hover:bg-knw-orangeHover active:bg-orange-700 text-white rounded text-xs font-medium transition flex items-center justify-center gap-1.5 cursor-pointer select-none"
+              title="กดเพื่อถ่าย 1 ภาพ หรือกดค้างไว้เพื่อถ่ายรัวๆ"
+            >
+              <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              <span id="btn-hold-text-${cls.id}">ถ่ายภาพกล้อง (กดค้าง)</span>
+            </button>
+
+            <!-- ปุ่ม อัปโหลดรูปภาพจากเครื่อง -->
+            <button 
+              onclick="triggerUploadForClass('${cls.id}')"
+              class="py-1.5 px-2.5 bg-transparent hover:bg-slate-100 text-slate-700 border border-slate-200 rounded text-xs font-medium transition flex items-center justify-center gap-1 cursor-pointer shrink-0 select-none"
+              title="เลือกรูปภาพใบหน้าจากคอมพิวเตอร์"
+            >
+              <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+              </svg>
+              <span>อัปโหลด</span>
+            </button>
+
+            <!-- ปุ่ม ล้างรูปในคลาส -->
+            ${sampleCount > 0 ? `
+              <button 
+                onclick="clearClassSamples('${cls.id}')" 
+                title="ลบรูปทั้งหมดในคลาสนี้"
+                class="p-1.5 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition cursor-pointer shrink-0"
+              >
+                <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            ` : ''}
+          </div>
+
+          <!-- Thumbnails Preview (สะอาด ไร้กรอบซ้อน) พร้อมปุ่ม ดูเพิ่มเติม -->
+          ${sampleCount > 0 ? `
+            <div class="flex items-center justify-between gap-2 pt-1">
+              <div class="flex items-center gap-1.5 overflow-x-auto py-0.5 scroll-custom flex-1 min-w-0">
+                ${cls.samples.slice(-6).map(imgUrl => `
+                  <img src="${imgUrl}" onclick="openFaceSamplesModal('${cls.id}')" title="คลิกเพื่อดูภาพทั้งหมดและจัดการ" class="w-8 h-8 object-cover rounded shrink-0 bg-slate-100 cursor-pointer hover:opacity-80 transition" />
+                `).join('')}
+              </div>
+              <button 
+                onclick="openFaceSamplesModal('${cls.id}')"
+                class="text-xs text-knw-orange hover:text-knw-orangeHover font-medium hover:underline cursor-pointer shrink-0 select-none flex items-center gap-1 py-0.5 px-1.5 rounded hover:bg-orange-50 transition"
+                title="เปิดดูภาพทั้งหมดและลบภาพที่ไม่ต้องการ"
+              >
+                <span>ดูเพิ่มเติม</span>
+                <span class="font-mono text-[11px] text-slate-400">(${sampleCount})</span>
+              </button>
+            </div>
+          ` : ''}
+        `;
+
+        container.appendChild(row);
+      });
+    }
+
+    function addNewFaceClass() {
+      const newId = `class_${Date.now()}`;
+      const newIndex = faceClasses.length + 1;
+      faceClasses.push({
+        id: newId,
+        name: `คลาสใหม่_${newIndex}`,
+        samples: []
+      });
+      renderFaceClasses();
+      saveFaceDataset();
+      appendLog(`[SYS] เพิ่มคลาสใหม่: คลาสใหม่_${newIndex}`);
+    }
+
+    function renameFaceClass(classId, newName) {
+      const cls = faceClasses.find(c => c.id === classId);
+      if (cls) {
+        cls.name = newName.trim() || cls.name;
+        saveFaceDataset();
+      }
+    }
+
+    function deleteFaceClass(classId) {
+      if (faceClasses.length <= 1) {
+        alert("ต้องมีอย่างน้อย 1 คลาส");
+        return;
+      }
+      if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบคลาสนี้?")) {
+        faceClasses = faceClasses.filter(c => c.id !== classId);
+        renderFaceClasses();
+        saveFaceDataset();
+        retrainKNNFromSamples();
+      }
+    }
+
+    function clearClassSamples(classId) {
+      const cls = faceClasses.find(c => c.id === classId);
+      if (cls) {
+        cls.samples = [];
+        renderFaceClasses();
+        saveFaceDataset();
+        retrainKNNFromSamples();
+        if (currentModalClassId === classId) {
+          renderFaceSamplesModal();
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Face Samples Modal (ดูเพิ่มเติม & ลบรายรูปพร้อมกากบาท)
+    // -------------------------------------------------------------
+    let currentModalClassId = null;
+
+    function openFaceSamplesModal(classId) {
+      currentModalClassId = classId;
+      renderFaceSamplesModal();
+      const modal = document.getElementById("modal-face-samples");
+      if (modal) modal.classList.remove("hidden");
+    }
+
+    function closeFaceSamplesModal() {
+      const modal = document.getElementById("modal-face-samples");
+      if (modal) modal.classList.add("hidden");
+      currentModalClassId = null;
+    }
+
+    function renderFaceSamplesModal() {
+      if (!currentModalClassId) return;
+      const cls = faceClasses.find(c => c.id === currentModalClassId);
+      if (!cls) return;
+
+      const titleEl = document.getElementById("modal-face-samples-title");
+      const countEl = document.getElementById("modal-face-samples-count");
+      const gridEl = document.getElementById("modal-face-samples-grid");
+      const emptyEl = document.getElementById("modal-face-samples-empty");
+
+      if (titleEl) titleEl.innerText = `ภาพตัวอย่างคลาส: ${cls.name}`;
+      const samples = cls.samples || [];
+      if (countEl) countEl.innerText = `${samples.length} ภาพ`;
+
+      if (samples.length === 0) {
+        if (gridEl) gridEl.innerHTML = "";
+        if (emptyEl) emptyEl.classList.remove("hidden");
+        return;
+      }
+
+      if (emptyEl) emptyEl.classList.add("hidden");
+      if (gridEl) {
+        gridEl.innerHTML = samples.map((imgUrl, idx) => `
+          <div class="relative group rounded overflow-hidden aspect-square bg-slate-100 border border-slate-200/80 hover:border-rose-400 transition">
+            <img src="${imgUrl}" class="w-full h-full object-cover select-none" />
+            
+            <!-- Hover Overlay พร้อมเครื่องหมายกากบาทสำหรับลบภาพ -->
+            <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center justify-center">
+              <button 
+                onclick="deleteSingleFaceSample('${cls.id}', ${idx})"
+                title="ลบภาพนี้"
+                class="p-1.5 rounded-full bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white shadow-md transition transform hover:scale-110 cursor-pointer flex items-center justify-center"
+              >
+                <svg class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            <span class="absolute bottom-1 left-1 px-1 rounded bg-slate-900/70 text-white text-[9px] font-mono pointer-events-none">
+              #${idx + 1}
+            </span>
+          </div>
+        `).join('');
+      }
+    }
+
+    async function deleteSingleFaceSample(classId, sampleIndex) {
+      const cls = faceClasses.find(c => c.id === classId);
+      if (!cls || !cls.samples || sampleIndex < 0 || sampleIndex >= cls.samples.length) return;
+
+      cls.samples.splice(sampleIndex, 1);
+      saveFaceDataset();
+      renderFaceClasses();
+      renderFaceSamplesModal();
+
+      // ฝึกฝนโมเดลใหม่หลังจากลบภาพตัวอย่าง
+      await retrainKNNFromSamples();
+      appendLog(`[SYS] ลบภาพตัวอย่าง #${sampleIndex + 1} ออกจากคลาส "${cls.name}" (คงเหลือ ${cls.samples.length} ภาพ)`);
+    }
+
+    // ปิด Modal เมื่อกดปุ่ม Escape
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeFaceSamplesModal();
+      }
+    });
+
+    // -------------------------------------------------------------
+    // Fast Capture & Upload Mechanics (Ultra Smooth Teachable-style)
+    // -------------------------------------------------------------
+    function startHoldCapture(classId) {
+      if (!isCameraRunning) {
+        alert("กรุณากด 'เปิดกล้องทำงาน' ก่อนทำการถ่ายภาพตัวอย่าง");
+        return;
+      }
+      if (isHoldingCapture) return;
+
+      isHoldingCapture = true;
+      currentHoldClassId = classId;
+
+      // ปรับ UI ปุ่มให้รู้ว่ากำลังบันทึก
+      const btnText = document.getElementById(`btn-hold-text-${classId}`);
+      if (btnText) btnText.innerText = "กำลังบันทึกภาพ...";
+
+      // ถ่ายภาพตัวอย่างภาพแรกทันที
+      captureOneSampleFast(classId);
+
+      // ถ่ายต่อเนื่องทุก 120ms อย่างลื่นไหล (ไม่แตะ DOM และไม่แตะ localStorage ขณะกด)
+      holdCaptureTimer = setInterval(() => {
+        if (isHoldingCapture) {
+          captureOneSampleFast(classId);
+        }
+      }, 120);
+    }
+
+    function stopHoldCapture() {
+      if (!isHoldingCapture) return;
+      isHoldingCapture = false;
+
+      if (holdCaptureTimer) {
+        clearInterval(holdCaptureTimer);
+        holdCaptureTimer = null;
+      }
+
+      // รีเซ็ตข้อความปุ่ม
+      if (currentHoldClassId) {
+        const btnText = document.getElementById(`btn-hold-text-${currentHoldClassId}`);
+        if (btnText) btnText.innerText = "ถ่ายภาพกล้อง (กดค้าง)";
+      }
+
+      // เมื่อผู้ใช้ปล่อยนิ้ว ค่อยเรนเดอร์ภาพ Thumbnail และบันทึกข้อมูลครั้งเดียว (ลื่น 100%)
+      renderFaceClasses();
+      saveFaceDataset();
+      currentHoldClassId = null;
+    }
+
+    function captureOneSampleFast(classId) {
+      const video = document.getElementById("webcam-video");
+      if (!video || video.readyState !== 4) return;
+
+      const cls = faceClasses.find(c => c.id === classId);
+      if (!cls) return;
+
+      // สร้าง canvas เพื่อ crop ใบหน้า
+      const cropCanvas = document.createElement("canvas");
+      cropCanvas.width = 160;
+      cropCanvas.height = 160;
+      const cropCtx = cropCanvas.getContext("2d");
+
+      // ใช้ activeFaceBox ที่ได้จากการคำนวณล่าสุด (ไม่ต้องรันโมเดล BlazeFace ซ้ำ!)
+      if (activeFaceBox && activeFaceBox.width > 20 && activeFaceBox.height > 20) {
+        const padX = activeFaceBox.width * 0.15;
+        const padY = activeFaceBox.height * 0.15;
+        const sx = Math.max(0, activeFaceBox.x - padX);
+        const sy = Math.max(0, activeFaceBox.y - padY);
+        const sw = Math.min(video.videoWidth - sx, activeFaceBox.width + padX * 2);
+        const sh = Math.min(video.videoHeight - sy, activeFaceBox.height + padY * 2);
+
+        cropCtx.drawImage(video, sx, sy, sw, sh, 0, 0, 160, 160);
+      } else {
+        // หากไม่มีกรอบใบหน้า (เช่น ถ่ายฉากหลังว่างๆ หรือไม่มีคน)
+        cropCtx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight, 0, 0, 160, 160);
+      }
+
+      // เก็บ Base64 ไว้เป็นตัวอย่าง Thumbnail (เก็บได้สูงสุด 50 ภาพต่อคลาส)
+      const dataUrl = cropCanvas.toDataURL("image/jpeg", 0.6);
+      if (cls.samples.length < 50) {
+        cls.samples.push(dataUrl);
+      } else {
+        // หมุนเวียนภาพล่าสุด
+        cls.samples[cls.samples.length - 1] = dataUrl;
+      }
+
+      // สกัด Embedding Feature และเพิ่มเข้า KNN Classifier ทันที (เร็วมาก < 2ms)
+      if (net && classifier) {
+        const tensor = tf.browser.fromPixels(cropCanvas);
+        const resized = tf.image.resizeBilinear(tensor, [224, 224]);
+        const embedding = net.infer(resized, true);
+        classifier.addExample(embedding, cls.id);
+        tensor.dispose();
+        resized.dispose();
+        embedding.dispose();
+      }
+
+      // อัปเดตเฉพาะตัวเลข Badge บนหน้าจอ (ไม่แตะ DOM ทั้งแผง ทำให้ลื่น 60 FPS!)
+      const badge = document.getElementById(`class-badge-${cls.id}`);
+      if (badge) {
+        const total = (classifier.getClassExampleCount()[cls.id] || cls.samples.length);
+        badge.innerText = `${total} ตัวอย่าง`;
+      }
+    }
+
+    function triggerUploadForClass(classId) {
+      activeUploadClassId = classId;
+      const fileInput = document.getElementById("class-file-uploader");
+      fileInput.value = "";
+      fileInput.click();
+    }
+
+    async function handleClassFilesUploaded(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0 || !activeUploadClassId) return;
+
+      const cls = faceClasses.find(c => c.id === activeUploadClassId);
+      if (!cls) return;
+
+      appendLog(`[SYS] กำลังประมวลผลรูปภาพอัปโหลด ${files.length} ไฟล์ เข้าคลาส "${cls.name}"...`);
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const dataUrl = await readFileAsDataURL(file);
+        cls.samples.push(dataUrl);
+
+        // โหลด image element เพื่อ extract embedding
+        await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            if (net && classifier) {
+              const tensor = tf.browser.fromPixels(img);
+              const resized = tf.image.resizeBilinear(tensor, [224, 224]);
+              const embedding = net.infer(resized, true);
+              classifier.addExample(embedding, cls.id);
+              tensor.dispose();
+              resized.dispose();
+              embedding.dispose();
+            }
+            resolve();
+          };
+          img.src = dataUrl;
+        });
+      }
+
+      renderFaceClasses();
+      saveFaceDataset();
+      appendLog(`[SYS] อัปโหลดและฝึกฝนโมเดลคลาส "${cls.name}" สำเร็จ (${cls.samples.length} รูป)`);
+    }
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Retrain KNN from stored samples
+    async function retrainKNNFromSamples() {
+      if (!net || !classifier) return;
+      classifier.clearAllClasses();
+
+      for (const cls of faceClasses) {
+        if (!cls.samples || cls.samples.length === 0) continue;
+        for (const dataUrl of cls.samples) {
+          await new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              const tensor = tf.browser.fromPixels(img);
+              const resized = tf.image.resizeBilinear(tensor, [224, 224]);
+              const embedding = net.infer(resized, true);
+              classifier.addExample(embedding, cls.id);
+              tensor.dispose();
+              resized.dispose();
+              embedding.dispose();
+              resolve();
+            };
+            img.src = dataUrl;
+          });
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Storage & Dataset Export/Import
+    // -------------------------------------------------------------
+    const STORAGE_KEY_CLASSES = "kb_face_classes_dataset";
+
+    function saveFaceDataset() {
+      try {
+        localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(faceClasses));
+        document.getElementById("face-storage-status").innerText = "บันทึกการเปลี่ยนแปลงแล้ว";
+      } catch (e) {
+        console.warn("Storage quota exceeded or error:", e);
+        document.getElementById("face-storage-status").innerText = "หน่วยความจำเบราว์เซอร์เต็ม (แนะนำ Export)";
+      }
+    }
+
+    function loadSavedFaceDataset() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_CLASSES);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            faceClasses = parsed;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load saved face dataset:", e);
+      }
+    }
+
+    function exportFaceDataset() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(faceClasses, null, 2));
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `face_dataset_${Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      appendLog("[SYS] ส่งออกชุดข้อมูลใบหน้า (Dataset JSON) สำเร็จ");
+    }
+
+    function importFaceDataset(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            faceClasses = imported;
+            renderFaceClasses();
+            saveFaceDataset();
+            await retrainKNNFromSamples();
+            appendLog(`[SYS] นำเข้าชุดข้อมูลใบหน้าสำเร็จ (${faceClasses.length} คลาส)`);
+          } else {
+            alert("รูปแบบไฟล์ไม่ถูกต้อง");
+          }
+        } catch (err) {
+          alert("เกิดข้อผิดพลาดในการอ่านไฟล์ JSON: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // -------------------------------------------------------------
+    // Web Serial API Integration with Auto-Memory & Port Switcher
+    // -------------------------------------------------------------
+    const STORAGE_KEY_LAST_SERIAL = "kb_last_serial_port_info";
+
+    // ตรวจสอบพอร์ตที่เคยให้สิทธิ์ไว้ตอนเปิดเว็บ (ไม่แสดง Badge 0x403 แต่จำไว้ในระบบ)
+    async function checkSavedSerialPort() {
+      if (!("serial" in navigator)) return;
+      try {
+        const ports = await navigator.serial.getPorts();
+        const badge = document.getElementById("serial-badge");
+        const btnText = document.getElementById("btn-serial-text");
+
+        // ข้อ 4: ซ่อนป้ายพอร์ตเดิม ไม่ต้องแสดงให้เกะกะ
+        if (badge && !serialPort) {
+          badge.className = "hidden";
+        }
+        if (btnText && !serialPort) {
+          btnText.innerText = "เชื่อมต่อ KidBright";
+        }
+      } catch (err) {
+        console.warn("Check saved ports error:", err);
+      }
+    }
+
+    async function toggleSerial(forceNew = false) {
+      const btn = document.getElementById("btn-serial-connect");
+      const btnText = document.getElementById("btn-serial-text");
+      const badge = document.getElementById("serial-badge");
+
+      if (!("serial" in navigator)) {
+        alert("เบราว์เซอร์ไม่รองรับ Web Serial API กรุณาเปิดผ่าน Google Chrome หรือ Microsoft Edge");
+        return;
+      }
+
+      // ถ้าเชื่อมต่ออยู่แล้ว และไม่ได้กดขอเลือกพอร์ตใหม่ -> ทำการตัดการเชื่อมต่อ
+      if (serialPort && !forceNew) {
+        await disconnectSerial();
+        return;
+      }
+
+      // ถ้าเชื่อมต่ออยู่แล้วแต่กดปุ่มขอเปลี่ยนพอร์ตใหม่ -> ตัดอันเก่าก่อนแล้วเปิดตัวเลือก
+      if (serialPort && forceNew) {
+        await disconnectSerial();
+      }
+
+      try {
+        let selectedPort = null;
+        const authorizedPorts = await navigator.serial.getPorts();
+        const lastInfoStr = localStorage.getItem(STORAGE_KEY_LAST_SERIAL);
+
+        // 1. กรณีไม่บังคับเลือกพอร์ตใหม่ (!forceNew): ค้นหาพอร์ตเดิมที่เคยอนุญาตสิทธิ์ไว้
+        if (!forceNew && authorizedPorts && authorizedPorts.length > 0) {
+          if (lastInfoStr) {
+            try {
+              const lastInfo = JSON.parse(lastInfoStr);
+              selectedPort = authorizedPorts.find(p => {
+                const info = p.getInfo();
+                return info.usbVendorId === lastInfo.usbVendorId && info.usbProductId === lastInfo.usbProductId;
+              });
+            } catch (e) {}
+          }
+          // ถ้าไม่ตรงกับ lastInfo แต่มีพอร์ตที่เคยให้สิทธิ์ไว้ ให้ใช้พอร์ตแรก
+          if (!selectedPort && authorizedPorts.length > 0) {
+            selectedPort = authorizedPorts[0];
+          }
+        }
+
+        // 2. ถ้าไม่มีพอร์ตที่จำไว้ หรือผู้ใช้กดเลือกพอร์ตใหม่ (forceNew === true): ให้เด้งหน้าต่างเลือกพอร์ต
+        if (!selectedPort) {
+          selectedPort = await navigator.serial.requestPort();
+        }
+
+        serialPort = selectedPort;
+        await serialPort.open({ baudRate: 115200 });
+
+        // บันทึกข้อมูลพอร์ตล่าสุดลง localStorage
+        const info = serialPort.getInfo();
+        if (info.usbVendorId) {
+          localStorage.setItem(STORAGE_KEY_LAST_SERIAL, JSON.stringify({
+            usbVendorId: info.usbVendorId,
+            usbProductId: info.usbProductId
+          }));
+        }
+
+        keepReading = true;
+        readerClosedPromise = readSerialLoop();
+
+        // แสดง Badge สำเร็จเมื่อเชื่อมต่อแล้วเท่านั้น (ไม่แสดงเลข 0x403)
+        if (badge) {
+          badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span>เชื่อมต่อแล้ว (115200)</span>';
+          badge.className = "flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-xs font-mono font-medium text-emerald-700 transition";
+        }
+
+        btnText.innerText = "ตัดการเชื่อมต่อ";
+        btn.parentElement.className = "flex items-center rounded bg-rose-600 border border-rose-700 overflow-hidden";
+        btn.className = "flex items-center gap-1.5 px-3 py-1.5 hover:bg-rose-700 text-white text-xs font-medium transition cursor-pointer";
+
+        const summarySerial = document.getElementById("serial-log-summary");
+        if (summarySerial) {
+          summarySerial.innerText = "เชื่อมต่อ 115200 bps";
+          summarySerial.className = "text-xs font-mono text-emerald-600 truncate max-w-[170px] transition";
+        }
+
+        appendLog("[SYS] เชื่อมต่อพอร์ต Serial สำเร็จ (Baudrate 115200 bps)");
+      } catch (err) {
+        if (err.name !== "NotFoundError") {
+          console.error("Serial connection error:", err);
+          appendLog("[SYS] การเชื่อมต่อ Serial ล้มเหลว: " + err.message);
+        }
+        serialPort = null;
+        await checkSavedSerialPort();
+      }
+    }
+
+    async function disconnectSerial() {
+      const btn = document.getElementById("btn-serial-connect");
+      const btnText = document.getElementById("btn-serial-text");
+      const badge = document.getElementById("serial-badge");
+
+      keepReading = false;
+
+      if (serialReader) {
+        try { await serialReader.cancel(); } catch (e) {}
+      }
+
+      if (readerClosedPromise) {
+        try { await readerClosedPromise; } catch (e) {}
+        readerClosedPromise = null;
+      }
+
+      if (serialPort) {
+        try {
+          await serialPort.close();
+          appendLog("[SYS] ตัดการเชื่อมต่อ Serial เรียบร้อย");
+        } catch (err) {
+          console.error("Error closing port:", err);
+        }
+        serialPort = null;
+      }
+
+      if (badge) {
+        badge.className = "hidden";
+      }
+
+      const summarySerial = document.getElementById("serial-log-summary");
+      if (summarySerial) {
+        summarySerial.innerText = "รอเชื่อมต่อ";
+        summarySerial.className = "text-xs font-mono text-slate-400 truncate max-w-[170px] transition";
+      }
+
+      btn.parentElement.className = "flex items-center rounded bg-knw-orange overflow-hidden";
+      btn.className = "flex items-center gap-1.5 px-3 py-1.5 hover:bg-knw-orangeHover text-white text-xs font-medium transition cursor-pointer";
+
+      await checkSavedSerialPort();
+    }
+
+    // ตรวจจับเมื่อมีการเสียบหรือถอดสาย USB อัตโนมัติ
+    if ("serial" in navigator) {
+      navigator.serial.addEventListener("connect", (e) => {
+        appendLog("[SYS] ตรวจพบการเสียบสาย USB พอร์ต Serial");
+        checkSavedSerialPort();
+      });
+      navigator.serial.addEventListener("disconnect", (e) => {
+        appendLog("[SYS] พอร์ต Serial ถูกตัดการเชื่อมต่อทางกายภาพ (สาย USB หลุด)");
+        if (serialPort) {
+          disconnectSerial();
+        } else {
+          checkSavedSerialPort();
+        }
+      });
+    }
+
+    async function readSerialLoop() {
+      if (!serialPort || !serialPort.readable) return;
+      try {
+        serialReader = serialPort.readable.getReader();
+        let lineBuffer = "";
+
+        while (keepReading) {
+          const { value, done } = await serialReader.read();
+          if (done) break;
+          if (value) {
+            lineBuffer += textDecoder.decode(value, { stream: true });
+            const lines = lineBuffer.split("\n");
+            lineBuffer = lines.pop();
+            for (const line of lines) {
+              const text = line.trim();
+              if (text) {
+                appendLog(`[RX] บอร์ดตอบกลับ: "${text}"`);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        if (keepReading) console.warn("Serial reading error:", err);
+      } finally {
+        if (serialReader) {
+          try { serialReader.releaseLock(); } catch (e) {}
+          serialReader = null;
+        }
+      }
+    }
+
+    async function sendToSerial(label) {
+      if (!serialPort || !serialPort.writable) return;
+      try {
+        const writer = serialPort.writable.getWriter();
+        await writer.write(textEncoder.encode(label + "\n"));
+        writer.releaseLock();
+        appendLog(`[TX] ส่งข้อมูล: "${label}"`);
+      } catch (err) {
+        console.error("Failed to send data:", err);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Logger & Utility
+    // -------------------------------------------------------------
+    function appendLog(msg) {
+      const logBox = document.getElementById("log-box");
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement("div");
+
+      if (msg.startsWith("[TX]")) {
+        div.className = "text-knw-orange font-semibold";
+      } else if (msg.startsWith("[RX]")) {
+        div.className = "text-emerald-400 font-semibold";
+      } else {
+        div.className = "text-slate-400";
+      }
+
+      div.innerText = `[${time}] ${msg}`;
+      logBox.appendChild(div);
+      logBox.scrollTop = logBox.scrollHeight;
+
+      // อัปเดตข้อมูลสำคัญใน Header ของการ์ด Serial Logs แม้การ์ดจะถูกพับอยู่
+      const summarySerial = document.getElementById("serial-log-summary");
+      if (summarySerial) {
+        if (msg.startsWith("[TX]")) {
+          summarySerial.innerText = msg.replace("[TX] ", "TX: ");
+          summarySerial.className = "text-xs text-knw-orange font-mono font-semibold truncate max-w-[170px] transition";
+        } else if (msg.startsWith("[RX]")) {
+          summarySerial.innerText = msg.replace("[RX] ", "RX: ");
+          summarySerial.className = "text-xs text-emerald-600 font-mono font-semibold truncate max-w-[170px] transition";
+        }
+      }
+    }
+
+    function clearLog() {
+      document.getElementById("log-box").innerHTML = '<div class="text-slate-500">// พร้อมรับส่งข้อมูลผ่าน Serial Port 115200 bps...</div>';
+      const summarySerial = document.getElementById("serial-log-summary");
+      if (summarySerial) {
+        summarySerial.innerText = serialPort ? "เชื่อมต่อ 115200 bps" : "รอเชื่อมต่อ";
+        summarySerial.className = "text-xs text-slate-400 font-mono truncate max-w-[170px] transition";
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[m];
+      });
+    }
+
+    window.addEventListener("beforeunload", () => {
+      if (serialPort) disconnectSerial();
+      if (isCameraRunning) stopCamera();
+    });
+  </script>
+</body>
+</html>
