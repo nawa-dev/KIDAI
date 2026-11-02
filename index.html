@@ -1077,7 +1077,7 @@
           <div class="p-3.5 bg-slate-50 border border-slate-200 rounded text-xs space-y-2">
             <strong class="text-slate-900 block">รูปแบบข้อมูลที่ส่งไปยัง KidBright32:</strong>
             <p class="text-slate-600">
-              เมื่อตรวจพบมือ ระบบจะส่งตัวเลขเดี่ยว เช่น <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-knw-orange">"0"</code>, <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-knw-orange">"1"</code>, ..., <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-knw-orange">"5"</code> เข้าสู่บอร์ดทาง Serial โดยตรง เพื่อให้นักเรียนนำค่าตัวเลขไปเปรียบเทียบในบล็อก If/Else ได้ง่ายดาย
+              ระบบจะส่งตัวเลขเดี่ยว เช่น <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-knw-orange">"0"</code>, <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-knw-orange">"1"</code>, ..., <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-knw-orange">"5"</code> เข้าสู่บอร์ดทาง Serial โดยตรง และในกรณีที่ไม่พบมือหน้ากล้อง ระบบจะส่งค่า <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-knw-orange">"0"</code> เพื่อให้บอร์ดหยุดการทำงานหรือตอบสนองได้อย่างปลอดภัยทันที
             </p>
           </div>
         </section>
@@ -2166,17 +2166,16 @@
         }
       }
 
-      // ส่ง Serial หากมีมือและครบช่วงเวลา (ส่งเฉพาะตัวเลขล้วน เช่น "0", "1", ..., "5")
-      if (handDetected) {
-        const intervalSlider = document.getElementById("interval-slider");
-        const intervalMs = intervalSlider ? parseInt(intervalSlider.value) : 400;
-        const sendPayload = String(count);
+      // ส่ง Serial หากเชื่อมต่อพอร์ตอยู่และครบช่วงเวลา
+      // หากพบมือจะส่งจำนวนนิ้ว "0" ถึง "5" และหากไม่พบมือหน้ากล้องจะส่งค่า "0" เพื่อให้บอร์ดรับรู้สถานะเสมอ
+      const intervalSlider = document.getElementById("interval-slider");
+      const intervalMs = intervalSlider ? parseInt(intervalSlider.value) : 400;
+      const sendPayload = handDetected ? String(count) : "0";
 
-        const now = Date.now();
-        if (now - lastSendTime >= intervalMs) {
-          await sendToSerial(sendPayload);
-          lastSendTime = now;
-        }
+      const now = Date.now();
+      if (now - lastSendTime >= intervalMs) {
+        await sendToSerial(sendPayload);
+        lastSendTime = now;
       }
     }
 
